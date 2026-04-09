@@ -1,12 +1,507 @@
 <!DOCTYPE html>
-<html lang="eng" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title>József's personal site</title>
-  </head>
-  <body>
-    <h1>
-      My own personal site hosted by GitHub.
-    </h1>
-  </body>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>József — AWS Developer & Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0e0c;
+      --surface: #171614;
+      --border: #2a2724;
+      --text: #e8e0d4;
+      --muted: #7a7168;
+      --accent: #c8964a;
+      --accent-dim: #8a622e;
+      --green: #5a9e6f;
+      --mono: 'DM Mono', monospace;
+      --serif: 'Fraunces', Georgia, serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 28px 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 80px 0 72px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-tag {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 28px;
+    }
+
+    .hero-tag::before {
+      content: '▸ ';
+      color: var(--accent);
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(40px, 8vw, 68px);
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    h1 em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+    }
+
+    .hero-desc {
+      max-width: 480px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 40px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 22px;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 500;
+    }
+
+    .btn-primary:hover {
+      background: #daa85a;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* ── SECTION ── */
+    section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 36px;
+    }
+
+    h2 {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text);
+      margin-bottom: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── ABOUT ── */
+    .about-text {
+      color: var(--muted);
+      line-height: 1.9;
+      margin-bottom: 36px;
+    }
+
+    .about-text strong { color: var(--text); font-weight: 500; }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── PROJECTS ── */
+    .projects-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .project-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .project-card:first-child { border-top: none; padding-top: 0; }
+
+    .project-card:hover .project-name { color: var(--accent); }
+
+    .project-name {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      transition: color 0.2s;
+      letter-spacing: -0.01em;
+    }
+
+    .project-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+
+    .project-tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tech-pill {
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--green);
+      background: #1a2d1f;
+      padding: 2px 8px;
+      border-radius: 2px;
+    }
+
+    .project-status {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      padding-top: 4px;
+    }
+
+    .status-active { color: var(--green); }
+
+    /* ── CONTACT ── */
+    .contact-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .contact-list li {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .contact-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      min-width: 70px;
+    }
+
+    .contact-list a {
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .contact-list a:hover { color: var(--accent); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-tag  { animation: fadeUp 0.5s ease both; }
+    h1         { animation: fadeUp 0.5s 0.08s ease both; }
+    .hero-desc { animation: fadeUp 0.5s 0.16s ease both; }
+    .hero-cta  { animation: fadeUp 0.5s 0.24s ease both; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 520px) {
+      nav { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .project-card { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <nav>
+    <span class="nav-logo">József</span>
+    <ul class="nav-links">
+      <li><a href="#about">Rólam</a></li>
+      <li><a href="#projects">Projektek</a></li>
+      <li><a href="#contact">Kontakt</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="hero-tag">AWS Developer · Builder · Szeged, HU</span>
+    <h1>Rendszereket<br>építek, <em>amelyek<br>működnek.</em></h1>
+    <p class="hero-desc">
+      Cloud infrastruktúrát, AI-alapú alkalmazásokat és beágyazott rendszereket tervezek
+      — a szerver rack-től a szántóföld szélén álló ESP32-ig.
+    </p>
+    <div class="hero-cta">
+      <a href="#projects" class="btn btn-primary">Projektek megtekintése</a>
+      <a href="#contact" class="btn btn-outline">Kapcsolatfelvétel</a>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="section-label">// rólam</div>
+    <h2>Hardver és felhő között.</h2>
+    <p class="about-text">
+      AWS Bedrock-ot, Next.js-t és Python Lambdát használok SaaS termékek építéséhez,
+      miközben ESP32-vel öntözőrendszereket vezérlek a gyümölcsösben.
+      Szeretem, ha <strong>a kód valódi problémát old meg</strong> — legyen az egy
+      magyar kisvállalkozás dokumentumkezelése, vagy egy klassz apróhirdetés kiszúrása
+      az interneten.
+    </p>
+    <p class="about-text">
+      Proxmox home lab, Commodore 64 gyűjtés, és egy <strong>1995-ös BMW F650 Funduro</strong>
+      tartja egyensúlyban a cloud-natív életet.
+    </p>
+    <div class="tags">
+      <span class="tag">AWS CDK</span>
+      <span class="tag">Bedrock / Claude API</span>
+      <span class="tag">Next.js</span>
+      <span class="tag">Python Lambda</span>
+      <span class="tag">DynamoDB</span>
+      <span class="tag">ESP32 / MQTT</span>
+      <span class="tag">React Native</span>
+      <span class="tag">Proxmox</span>
+      <span class="tag">GitLab CI/CD</span>
+      <span class="tag">Telegram bots</span>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="section-label">// projektek</div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div>
+          <div class="project-name">DocuChat</div>
+          <p class="project-desc">
+            AI-alapú dokumentum-asszisztens SaaS magyar kisvállalkozásoknak.
+            Multi-tenant architektúra AWS Bedrock Knowledge Bases-szel,
+            Next.js frontend Amplify-on, tiered árazás.
+          </p>
+          <div class="project-tech">
+            <span class="tech-pill">AWS Bedrock</span>
+            <span class="tech-pill">Next.js</span>
+            <span class="tech-pill">S3 Vectors</span>
+            <span class="tech-pill">Cognito</span>
+            <span class="tech-pill">DynamoDB</span>
+          </div>
+        </div>
+        <span class="project-status status-active">● aktív</span>
+      </div>
+
+      <div class="project-card">
+        <div>
+          <div class="project-name">OpenClaw Monitor</div>
+          <p class="project-desc">
+            Apróhirdetés-figyelő és AI-alapú pontozórendszer Jófogás és Hardverapró
+            oldalakhoz. Telegram interface, Bedrock-alapú relevanciaszűrő, SQLite deduplikáció.
+          </p>
+          <div class="project-tech">
+            <span class="tech-pill">Python</span>
+            <span class="tech-pill">AWS Bedrock</span>
+            <span class="tech-pill">Telegram API</span>
+            <span class="tech-pill">SQLite</span>
+          </div>
+        </div>
+        <span class="project-status status-active">● aktív</span>
+      </div>
+
+      <div class="project-card">
+        <div>
+          <div class="project-name">Plant Disease AI</div>
+          <p class="project-desc">
+            Fotóalapú növénybetegség-felismerő React és React Native alkalmazás.
+            Anthropic Vision API, strukturált magyar nyelvű diagnózis, történetelőzmény.
+          </p>
+          <div class="project-tech">
+            <span class="tech-pill">React Native</span>
+            <span class="tech-pill">Claude Vision</span>
+            <span class="tech-pill">AWS Lambda</span>
+          </div>
+        </div>
+        <span class="project-status">kész</span>
+      </div>
+
+      <div class="project-card">
+        <div>
+          <div class="project-name">Okos öntözőrendszer</div>
+          <p class="project-desc">
+            76 bodzafa és gyümölcsfák csepegtetős öntözése ESP32 vezérléssel,
+            AWS IoT Core + MQTT + Bedrock integrációval, két 24VAC zónában.
+          </p>
+          <div class="project-tech">
+            <span class="tech-pill">ESP32</span>
+            <span class="tech-pill">AWS IoT Core</span>
+            <span class="tech-pill">MQTT</span>
+            <span class="tech-pill">Bedrock</span>
+          </div>
+        </div>
+        <span class="project-status">tervezés</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="section-label">// kontakt</div>
+    <h2>Dolgozzunk együtt.</h2>
+    <ul class="contact-list">
+      <li>
+        <span class="contact-label">GitHub</span>
+        <a href="https://github.com/" target="_blank">github.com/felhasznalonev</a>
+      </li>
+      <li>
+        <span class="contact-label">Email</span>
+        <a href="mailto:email@example.com">email@example.com</a>
+      </li>
+      <li>
+        <span class="contact-label">Lokáció</span>
+        <span style="color: var(--muted)">Szeged, Magyarország</span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>© 2026 József</span>
+    <span>Szeged · AWS · Builder</span>
+  </footer>
+
+</div>
+</body>
 </html>
