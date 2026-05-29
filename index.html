@@ -1,507 +1,1383 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>József — AWS Developer & Builder</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #1e1c18;
-      --surface: #272420;
-      --border: #3d3830;
-      --text: #e8e0d4;
-      --muted: #8f8577;
-      --accent: #c8964a;
-      --accent-dim: #8a622e;
-      --green: #5a9e6f;
-      --mono: 'DM Mono', monospace;
-      --serif: 'Fraunces', Georgia, serif;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Marokkó — Interaktív utazási térkép</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+  :root {
+    --ink: #2a1d12;
+    --ink-soft: #5a4530;
+    --parchment: #f4e7cf;
+    --parchment-2: #eed9b5;
+    --cream: #faf1de;
+    --terracotta: #b9532b;
+    --terracotta-deep: #8a3a1b;
+    --saffron: #d99135;
+    --majorelle: #1d4ea3;
+    --majorelle-deep: #15366e;
+    --sand: #d9b878;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #1a120a; color: var(--ink); font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; }
+  .stage {
+    position: relative; width: 100%; min-height: 100vh;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 35%, #f6ead2 0%, #efdfbe 60%, #e3cfa6 100%);
+    overflow: hidden;
+  }
+  .stage::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(110,75,40,0.05) 0, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(110,75,40,0.06) 0, transparent 45%);
+    mix-blend-mode: multiply;
+  }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Header */
+  .topbar {
+    position: relative; z-index: 3;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 26px 36px 0; gap: 24px; flex-wrap: wrap;
+  }
+  .brand { display: flex; flex-direction: column; gap: 4px; }
+  .brand .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--terracotta-deep);
+  }
+  .brand h1 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+    font-size: 42px; line-height: 0.95; margin: 0; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .brand h1 em { font-style: italic; color: var(--terracotta-deep); font-weight: 500; }
+  .brand .sub { font-size: 13px; color: var(--ink-soft); margin-top: 6px; max-width: 520px; }
 
-    html { scroll-behavior: smooth; }
+  .summary-pill {
+    display: inline-flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(90,69,48,0.35);
+    border-radius: 999px; padding: 8px 18px;
+    backdrop-filter: blur(4px);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .summary-pill strong { color: var(--ink); font-weight: 600; }
+  .summary-pill .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--terracotta);
+  }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 14px;
-      line-height: 1.7;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+  /* Map area */
+  .mapwrap {
+    position: relative; z-index: 2;
+    margin: 18px 36px 0; height: calc(100vh - 260px); min-height: 580px;
+    border: 1px solid rgba(90,69,48,0.45);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(40,20,5,0.5);
+  }
+  #map { width: 100%; height: 100%; background: #e8d3a8; }
+  /* Warm wash on the topo tiles to harmonize with the parchment palette */
+  .leaflet-tile-pane { transition: filter 0.4s; }
 
-    /* Noise overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.35;
-    }
+  /* Hide the default attribution chrome a bit */
+  .leaflet-control-attribution {
+    background: rgba(250,241,222,0.85) !important;
+    font-family: 'Manrope', sans-serif; font-size: 10px;
+    color: var(--ink-soft) !important;
+  }
+  .leaflet-control-attribution a { color: var(--terracotta-deep) !important; }
+  .leaflet-control-zoom a {
+    background: var(--cream) !important; color: var(--ink) !important;
+    border: 1px solid rgba(90,69,48,0.4) !important;
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+  }
+  .leaflet-control-zoom a:hover { background: var(--parchment-2) !important; }
 
-    .wrapper {
-      position: relative;
-      z-index: 1;
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+  /* Custom pins */
+  .pin {
+    position: relative;
+    width: 42px; height: 54px;
+    transform: translate(-50%, -100%);
+    cursor: pointer;
+    filter:
+      drop-shadow(0 6px 10px rgba(20,12,5,0.55))
+      drop-shadow(0 0 3px rgba(250,241,222,1))
+      drop-shadow(0 0 8px rgba(250,241,222,0.6));
+    transition: transform 0.18s;
+  }
+  .pin:hover { transform: translate(-50%, -100%) scale(1.12); z-index: 500; }
+  .pin.selected { transform: translate(-50%, -100%) scale(1.25); z-index: 600; }
+  .pin-halo {
+    position: absolute; left: 50%; bottom: 0;
+    width: 22px; height: 8px;
+    transform: translate(-50%, 50%);
+    background: radial-gradient(ellipse, rgba(20,12,5,0.45) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .pin-body {
+    position: absolute; left: 0; top: 0;
+    width: 42px; height: 54px;
+  }
+  .pin-body svg { width: 100%; height: 100%; display: block; }
+  .pin-day {
+    position: absolute; top: -8px; right: -12px;
+    min-width: 26px; height: 26px; padding: 0 7px;
+    border-radius: 999px;
+    background: var(--cream); color: var(--ink);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 2.5px solid var(--ink);
+    box-shadow: 0 3px 6px rgba(20,12,5,0.5), 0 0 0 2px var(--cream);
+    letter-spacing: 0;
+  }
+  .pin-day.multi {
+    background: var(--ink); color: var(--cream); border-color: var(--cream);
+    box-shadow: 0 3px 6px rgba(20,12,5,0.5), 0 0 0 2px var(--ink);
+  }
+  .pin-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--ink); white-space: nowrap;
+    background: var(--cream);
+    padding: 4px 11px;
+    border-radius: 3px;
+    border: 1.5px solid var(--ink);
+    box-shadow: 0 3px 8px rgba(20,12,5,0.35), 0 0 0 1px rgba(250,241,222,0.6);
+    pointer-events: auto;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+  }
+  .pin-label::before {
+    content: ''; position: absolute;
+    top: -5px; left: 50%; transform: translateX(-50%) rotate(45deg);
+    width: 8px; height: 8px;
+    background: var(--cream);
+    border-left: 1.5px solid var(--ink);
+    border-top: 1.5px solid var(--ink);
+  }
+  .pin.selected .pin-label {
+    background: var(--terracotta-deep);
+    color: var(--cream);
+    border-color: var(--ink);
+  }
+  .pin.selected .pin-label::before {
+    background: var(--terracotta-deep);
+    border-color: var(--ink);
+  }
 
-    /* ── NAV ── */
-    nav {
-      padding: 28px 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
+  /* Címke-irányok — a zsúfolt klaszterek szétszedéséhez */
+  .pin-label.dir-top {
+    top: auto; bottom: 100%;
+    margin-top: 0; margin-bottom: 10px;
+  }
+  .pin-label.dir-top::before {
+    top: auto; bottom: -5px;
+    border-left: none; border-top: none;
+    border-right: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .pin-label.dir-left {
+    top: 27%; bottom: auto; left: auto; right: 100%;
+    transform: translateY(-50%);
+    margin-top: 0; margin-right: 12px;
+  }
+  .pin-label.dir-left::before {
+    top: 50%; left: auto; right: -5px;
+    transform: translateY(-50%) rotate(45deg);
+    border-left: none; border-top: none;
+    border-right: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .pin-label.dir-right {
+    top: 27%; bottom: auto; left: 100%; right: auto;
+    transform: translateY(-50%);
+    margin-top: 0; margin-left: 12px;
+  }
+  .pin-label.dir-right::before {
+    top: 50%; left: -5px;
+    transform: translateY(-50%) rotate(45deg);
+    border-right: none; border-bottom: none;
+    border-left: 1.5px solid var(--ink);
+    border-top: 1.5px solid var(--ink);
+  }
+  .pin-ring {
+    position: absolute; left: 50%; top: 32%;
+    width: 42px; height: 42px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%; border: 3px solid var(--terracotta);
+    opacity: 0; pointer-events: none;
+    animation: pulse 2s ease-out infinite;
+  }
+  .pin.selected .pin-ring { opacity: 1; }
+  @keyframes pulse {
+    0% { transform: translate(-50%,-50%) scale(0.7); opacity: 0.95; }
+    100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; }
+  }
+  /* Bounce animation when a pin is brought to focus from a card click */
+  .pin.pin-bounce {
+    animation: pinBounce 0.8s cubic-bezier(.34,1.56,.64,1) 1;
+  }
+  @keyframes pinBounce {
+    0%   { transform: translate(-50%, -100%) scale(1); }
+    22%  { transform: translate(-50%, -155%) scale(1.4); }
+    45%  { transform: translate(-50%, -100%) scale(1.15); }
+    65%  { transform: translate(-50%, -125%) scale(1.28); }
+    85%  { transform: translate(-50%, -100%) scale(1.22); }
+    100% { transform: translate(-50%, -100%) scale(1.25); }
+  }
 
-    .nav-logo {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-style: italic;
-      font-weight: 300;
-      color: var(--accent);
-      letter-spacing: -0.02em;
-    }
+  /* Map style picker (top-left of map) */
+  .style-picker {
+    position: absolute;
+    top: 16px; left: 16px;
+    z-index: 800;
+    background: rgba(250,241,222,0.92);
+    border: 1px solid rgba(90,69,48,0.4);
+    border-radius: 999px;
+    padding: 4px;
+    display: inline-flex;
+    gap: 0;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 20px rgba(20,12,5,0.3);
+  }
+  .style-picker .lbl {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 7px 8px 7px 12px;
+    border-right: 1px solid rgba(90,69,48,0.25);
+    margin-right: 4px;
+    align-self: center;
+  }
+  .style-picker button {
+    appearance: none; border: 0; background: transparent;
+    padding: 6px 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer; border-radius: 999px;
+    transition: 0.2s;
+    font-weight: 600;
+  }
+  .style-picker button.active {
+    background: var(--ink);
+    color: var(--cream);
+  }
+  .style-picker button:hover:not(.active) { color: var(--ink); background: rgba(42,29,18,0.06); }
 
-    .nav-links {
-      display: flex;
-      gap: 28px;
-      list-style: none;
-    }
+  /* Detail panel */
+  .panel {
+    position: absolute; top: 18px; right: 18px; width: 380px;
+    max-height: calc(100% - 36px);
+    background: var(--cream);
+    border: 1px solid rgba(90,69,48,0.4);
+    border-radius: 4px;
+    box-shadow: 0 30px 60px -20px rgba(40,20,5,0.5), 0 0 0 6px rgba(244,231,207,0.5);
+    transform: translateX(420px); opacity: 0;
+    transition: transform 0.28s cubic-bezier(.2,.7,.2,1), opacity 0.18s;
+    overflow: hidden; display: flex; flex-direction: column;
+    z-index: 1000;
+    pointer-events: none;
+  }
+  .panel.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
+  .panel-img {
+    width: 100%; height: 200px; object-fit: cover; display: block;
+    background: var(--parchment-2);
+  }
+  .panel-img-fallback {
+    width: 100%; height: 200px; display: flex; align-items: flex-end;
+    padding: 18px 20px;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,235,180,0.45) 0, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(110,75,40,0.25) 0, transparent 55%),
+      repeating-linear-gradient(135deg, rgba(80,50,20,0.06) 0 2px, transparent 2px 7px),
+      linear-gradient(135deg, #d9a86a 0%, #b9532b 100%);
+    color: var(--cream); font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 500; line-height: 1;
+    letter-spacing: -0.01em; position: relative;
+  }
+  .panel-img-fallback::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(40,20,5,0.45) 100%);
+    pointer-events: none;
+  }
+  .panel-img-fallback span { position: relative; z-index: 1; text-shadow: 0 2px 8px rgba(40,20,5,0.4); }
+  .panel-img-fallback small {
+    display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase;
+    margin-top: 6px; opacity: 0.85;
+  }
+  .panel-close {
+    position: absolute; top: 10px; right: 10px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(20,12,5,0.6); color: var(--cream);
+    border: 0; cursor: pointer; font-size: 18px; line-height: 1;
+    display: grid; place-items: center;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+  }
+  .panel-close:hover { background: rgba(20,12,5,0.85); }
+  .panel-body { padding: 22px 24px 26px; overflow-y: auto; }
+  .panel-kicker {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--terracotta-deep);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-kicker .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .panel h2 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+    font-size: 30px; line-height: 1; margin: 8px 0 4px; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel .sub {
+    color: var(--ink-soft); margin-bottom: 16px;
+    font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 15px;
+  }
+  .panel p { font-size: 13.5px; line-height: 1.55; margin: 0 0 12px; color: var(--ink); }
+  .panel .row {
+    display: grid; grid-template-columns: 92px 1fr; gap: 12px;
+    padding: 10px 0; border-top: 1px solid rgba(90,69,48,0.18);
+    font-size: 13px; align-items: baseline;
+  }
+  .panel .row:last-of-type { border-bottom: 1px solid rgba(90,69,48,0.18); margin-bottom: 16px; }
+  .panel .row .k {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft);
+  }
+  .panel .row .v { color: var(--ink); }
+  .panel .days {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
+  }
+  .panel .day-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 3px;
+    background: var(--ink); color: var(--cream);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .panel .day-chip .num {
+    background: var(--terracotta); color: var(--cream); padding: 1px 5px; border-radius: 2px;
+    font-weight: 600;
+  }
+  .panel a.link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--majorelle); text-decoration: none; font-size: 12.5px;
+    border-bottom: 1px solid currentColor; padding-bottom: 1px;
+  }
+  .panel a.link:hover { color: var(--terracotta-deep); }
+  .panel .links { display: flex; flex-direction: column; gap: 8px; }
 
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      transition: color 0.2s;
-    }
+  /* Hint */
+  .hint {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,12,5,0.78); color: var(--cream);
+    padding: 8px 16px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    pointer-events: none; backdrop-filter: blur(4px);
+    transition: opacity 0.4s; opacity: 0.9;
+    z-index: 999;
+  }
+  .hint.fade { opacity: 0; }
 
-    .nav-links a:hover { color: var(--accent); }
+  /* Cost card */
+  .cost {
+    position: absolute; left: 18px; bottom: 18px;
+    background: var(--cream); border: 1px solid rgba(90,69,48,0.4);
+    border-radius: 4px; padding: 14px 18px;
+    box-shadow: 0 20px 40px -15px rgba(40,20,5,0.4);
+    min-width: 240px; max-width: 280px;
+    z-index: 1000;
+  }
+  .cost .lbl {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .cost .total {
+    font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 500;
+    color: var(--ink); line-height: 1; margin: 4px 0 8px;
+  }
+  .cost .breakdown { font-size: 11px; color: var(--ink-soft); line-height: 1.55; }
+  .cost .flag {
+    display: inline-block; padding: 2px 7px; background: var(--ink); color: var(--cream);
+    border-radius: 2px; font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.08em; margin-bottom: 6px;
+  }
 
-    /* ── HERO ── */
-    .hero {
-      padding: 80px 0 72px;
-      border-bottom: 1px solid var(--border);
-    }
+  /* Timeline */
+  .timeline {
+    position: relative; z-index: 3;
+    margin: 14px 36px 28px;
+    padding: 16px 22px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(90,69,48,0.3);
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+  .timeline-head {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 16px;
+  }
+  .timeline-head h3 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    margin: 0; color: var(--ink);
+  }
+  .timeline-head .meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink-soft); letter-spacing: 0.06em;
+  }
+  .timeline-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px;
+  }
+  .tl-day {
+    border: 1px solid rgba(90,69,48,0.25);
+    border-radius: 4px; padding: 12px 14px 10px;
+    background: rgba(255,255,255,0.6);
+    transition: 0.2s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .tl-day:hover { background: rgba(255,255,255,0.85); border-color: var(--terracotta); box-shadow: 0 4px 12px rgba(40,20,5,0.12); }
+  .tl-day .num {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--terracotta-deep); letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .tl-day .where {
+    font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 500;
+    color: var(--ink); line-height: 1; margin-bottom: 2px;
+  }
+  .tl-day .progs { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+  .tl-prog {
+    display: grid; grid-template-columns: 64px 1fr auto; gap: 8px;
+    align-items: baseline;
+    padding: 5px 0; border-top: 1px dashed rgba(90,69,48,0.2);
+    cursor: pointer; transition: 0.15s;
+  }
+  .tl-prog:first-child { border-top: 0; padding-top: 2px; }
+  .tl-prog:hover { background: rgba(185,83,43,0.06); }
+  .tl-prog.selected {
+    background: rgba(185,83,43,0.16);
+    box-shadow: inset 3px 0 0 var(--terracotta-deep);
+    border-radius: 0 3px 3px 0;
+    padding-left: 10px;
+    border-top-color: transparent !important;
+  }
+  .tl-prog.selected .w { color: var(--terracotta-deep); }
+  .tl-prog.selected .t { color: var(--terracotta-deep); }
+  .tl-day.has-active { border-color: var(--terracotta); box-shadow: 0 6px 14px rgba(40,20,5,0.15); }
+  .tl-prog .t {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: var(--ink-soft); letter-spacing: 0.06em; text-transform: uppercase;
+    padding-top: 1px;
+  }
+  .tl-prog .body { display: flex; flex-direction: column; gap: 1px; }
+  .tl-prog .w {
+    font-size: 12.5px; color: var(--ink); font-weight: 600; line-height: 1.2;
+  }
+  .tl-prog .d {
+    font-size: 11px; color: var(--ink-soft); line-height: 1.35;
+  }
+  .tl-prog .ext {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--majorelle); text-decoration: none;
+    padding: 0 4px;
+  }
+  .tl-prog .ext:hover { color: var(--terracotta-deep); }
 
-    .hero-tag {
-      display: inline-block;
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--green);
-      margin-bottom: 28px;
-    }
+  /* Animált szaggatott útvonalvonal — a szaggatás haladási irányban fut */
+  .route-dashed-anim {
+    animation: routeDashFlow 1.6s linear infinite;
+  }
+  @keyframes routeDashFlow {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -26; }
+  }
 
-    .hero-tag::before {
-      content: '▸ ';
-      color: var(--accent);
-    }
+  /* Repülőgép marker */
+  .plane-wrap { pointer-events: none; transition: opacity 0.5s; }
+  .plane-svg { display: block; filter: drop-shadow(0 5px 8px rgba(20,12,5,0.5)); }
+  .plane-rot { transform-origin: center; transform-box: fill-box; }
 
-    h1 {
-      font-family: var(--serif);
-      font-size: clamp(40px, 8vw, 68px);
-      font-weight: 600;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-      color: var(--text);
-      margin-bottom: 28px;
-    }
+  /* Autó marker */
+  .car-wrap { pointer-events: none; transition: opacity 0.4s; }
+  .car-svg { display: block; filter: drop-shadow(0 4px 6px rgba(20,12,5,0.55)); }
+  .car-rot { transform-origin: center; transform-box: fill-box; }
 
-    h1 em {
-      font-style: italic;
-      font-weight: 300;
-      color: var(--accent);
-    }
-
-    .hero-desc {
-      max-width: 480px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.8;
-      margin-bottom: 40px;
-    }
-
-    .hero-cta {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 10px 22px;
-      border-radius: 3px;
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: var(--bg);
-      font-weight: 500;
-    }
-
-    .btn-primary:hover {
-      background: #daa85a;
-    }
-
-    .btn-outline {
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .btn-outline:hover {
-      border-color: var(--accent-dim);
-      color: var(--accent);
-    }
-
-    /* ── SECTION ── */
-    section {
-      padding: 64px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-label {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 36px;
-    }
-
-    h2 {
-      font-family: var(--serif);
-      font-size: 28px;
-      font-weight: 300;
-      font-style: italic;
-      color: var(--text);
-      margin-bottom: 20px;
-      letter-spacing: -0.01em;
-    }
-
-    /* ── ABOUT ── */
-    .about-text {
-      color: var(--muted);
-      line-height: 1.9;
-      margin-bottom: 36px;
-    }
-
-    .about-text strong { color: var(--text); font-weight: 500; }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tag {
-      padding: 4px 12px;
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.04em;
-    }
-
-    /* ── PROJECTS ── */
-    .projects-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .project-card {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: start;
-      padding: 24px 0;
-      border-top: 1px solid var(--border);
-      text-decoration: none;
-      transition: all 0.2s;
-      cursor: default;
-    }
-
-    .project-card:first-child { border-top: none; padding-top: 0; }
-
-    .project-card:hover .project-name { color: var(--accent); }
-
-    .project-name {
-      font-family: var(--serif);
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 6px;
-      transition: color 0.2s;
-      letter-spacing: -0.01em;
-    }
-
-    .project-desc {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
-      margin-bottom: 12px;
-    }
-
-    .project-tech {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .tech-pill {
-      font-size: 10px;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--green);
-      background: #223328;
-      padding: 2px 8px;
-      border-radius: 2px;
-    }
-
-    .project-status {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      white-space: nowrap;
-      padding-top: 4px;
-    }
-
-    .status-active { color: var(--green); }
-
-    /* ── CONTACT ── */
-    .contact-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .contact-list li {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .contact-label {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      min-width: 70px;
-    }
-
-    .contact-list a {
-      color: var(--text);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .contact-list a:hover { color: var(--accent); }
-
-    /* ── FOOTER ── */
-    footer {
-      padding: 32px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: 0.04em;
-    }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .hero-tag  { animation: fadeUp 0.5s ease both; }
-    h1         { animation: fadeUp 0.5s 0.08s ease both; }
-    .hero-desc { animation: fadeUp 0.5s 0.16s ease both; }
-    .hero-cta  { animation: fadeUp 0.5s 0.24s ease both; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 520px) {
-      nav { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .project-card { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 8px; text-align: center; }
-    }
-  </style>
+  @media (max-width: 900px) {
+    .panel { width: calc(100% - 36px); right: 18px; }
+    .cost { display: none; }
+  }
+</style>
 </head>
 <body>
-<div class="wrapper">
+  <div id="root"></div>
 
-  <nav>
-    <span class="nav-logo">József</span>
-    <ul class="nav-links">
-      <li><a href="#about">Rólam</a></li>
-      <li><a href="#projects">Projektek</a></li>
-      <li><a href="#contact">Kontakt</a></li>
-    </ul>
-  </nav>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-  <!-- HERO -->
-  <div class="hero">
-    <span class="hero-tag">AWS Developer · Builder · Szeged, HU</span>
-    <h1>Rendszereket<br>építek, <em>amelyek<br>működnek.</em></h1>
-    <p class="hero-desc">
-      Cloud infrastruktúrát, AI-alapú alkalmazásokat és beágyazott rendszereket tervezek
-      — a szerver rack-től a szántóföld szélén álló ESP32-ig.
-    </p>
-    <div class="hero-cta">
-      <a href="#projects" class="btn btn-primary">Projektek megtekintése</a>
-      <a href="#contact" class="btn btn-outline">Kapcsolatfelvétel</a>
+  <script type="text/babel" data-presets="env,react">
+/* ===========================================================
+   MAROKKÓ — A opció (Agafay + Agadir)
+   2026.06.11–18. • 2 fő • Wizz W6 2459/2460
+   =========================================================== */
+
+const LOCATIONS = [
+  {
+    id: 'rak',
+    name: 'RAK reptér',
+    sub: 'Marrakesh-Menara • W6 2459/2460',
+    type: 'airport',
+    lat: 31.6069, lon: -8.0363,
+    labelDir: 'left',
+    days: [1, 8],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Marrakech_-_Menara_Airport_-_RAK_-_GMMX_%288751515032%29.jpg/1024px-Marrakech_-_Menara_Airport_-_RAK_-_GMMX_%288751515032%29.jpg',
+    kicker: 'Repülőtér • be / ki',
+    summary: 'Wizz Air W6 2459: BUD 16:15 → RAK 19:45 (06.11). Visszaút W6 2460: RAK 20:20 → BUD 01:30 (06.18→19). Papír boarding pass kötelező, lepecsételtetni a Wizz pultnál!',
+    rows: [
+      { k: 'Oda', v: 'W6 2459 • 06.11 csüt • 16:15 → 19:45' },
+      { k: 'Vissza', v: 'W6 2460 • 06.18 csüt • 20:20 → 01:30' },
+      { k: 'Taxi', v: 'Hivatalos pult • 150–250 MAD a medinába' },
+      { k: 'Belépés', v: 'Adatlap • útlevél-pecsét + reg.szám kötelező' }
+    ],
+    links: [
+      { label: 'Marrakesh-Menara — Wikipedia', url: 'https://en.wikipedia.org/wiki/Marrakesh_Menara_Airport' },
+      { label: 'Wizz Air check-in', url: 'https://wizzair.com/hu-hu/online-services/online-check-in' }
+    ]
+  },
+  {
+    id: 'marrakesh',
+    name: 'Marrakesh',
+    sub: 'Vörös város • főhadiszállás',
+    type: 'city',
+    lat: 31.6295, lon: -7.9811,
+    labelDir: 'right',
+    days: [1, 2, 5, 7, 8],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Djemaa_el_Fna.jpg/1024px-Djemaa_el_Fna.jpg',
+    kicker: 'UNESCO világörökség • medina',
+    summary: 'A piros agyagfalú császárváros. A medina szúkjai, paloták, kertek és a Jemaa el-Fnaa esti nyüzsgése. Innen indul minden — 7 éjszakából 5 itt egy AC-s, medencés riadban.',
+    rows: [
+      { k: 'Stílus', v: 'Mór–andalúz, berber' },
+      { k: 'Szállás', v: 'Riad 7 éj, AC + medence • ~175 e Ft / 2 fő' },
+      { k: 'Belépők', v: 'Bahia ~70 MAD • Saadi ~70 MAD • Ben Youssef ~50 MAD' },
+      { k: 'Mikor', v: 'Esti séta 19:00 után, paloták délelőtt' },
+      { k: 'Hammam', v: 'gőz → fekete szappan → kese → argán-masszázs' }
+    ],
+    links: [
+      { label: 'Jemaa el-Fnaa — Wikipedia', url: 'https://en.wikipedia.org/wiki/Jemaa_el-Fnaa' },
+      { label: 'Bahia Palace — Wikipedia', url: 'https://en.wikipedia.org/wiki/Bahia_Palace' },
+      { label: 'Booking — Marrakesh medina riad', url: 'https://www.booking.com/searchresults.html?ss=marrakech+medina&group_adults=2&checkin=2026-06-11&checkout=2026-06-18' },
+      { label: 'GetYourGuide — Medina séta', url: 'https://www.getyourguide.com/marrakesh-l208/marrakech-bahia-palace-saadian-tombs-souk-and-medina-tour-t500020/' },
+      { label: 'Hammam de la Rose', url: 'https://hammamdelarose.com/' }
+    ]
+  },
+  {
+    id: 'majorelle',
+    name: 'Majorelle kert',
+    sub: 'YSL kobaltkék oázisa',
+    type: 'sight',
+    lat: 31.6418, lon: -8.0030,
+    labelDir: 'top',
+    days: [6],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Le_jardin_des_majorelle_40.JPG/1024px-Le_jardin_des_majorelle_40.JPG',
+    kicker: 'Kert + múzeum • Marrakesh',
+    summary: 'Yves Saint Laurent kobaltkék pavilonjai, kaktuszgyűjtemény és bambuszligetek. A kert mellett a YSL múzeum és a berber múzeum. Kora reggel a legjobb, mielőtt forr a tömeg.',
+    rows: [
+      { k: 'Belépő', v: 'Kert ~120 MAD • YSL múzeum ~100 MAD' },
+      { k: 'Időzítés', v: 'Nyitás után 8:30, vagy 17:00 után' },
+      { k: 'Tipp', v: 'Online jegy ajánlott, sorbanállás nélkül' }
+    ],
+    links: [
+      { label: 'jardinmajorelle.com', url: 'https://www.jardinmajorelle.com/en/' },
+      { label: 'Majorelle Garden — Wikipedia', url: 'https://en.wikipedia.org/wiki/Majorelle_Garden' }
+    ]
+  },
+  {
+    id: 'agafay',
+    name: 'Agafay-sivatag',
+    sub: '"Holdbéli" köves táj',
+    type: 'desert',
+    lat: 31.4500, lon: -8.2800,
+    labelDir: 'bottom',
+    days: [6, 7],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Plateau_Yagour%2C_Agdal%2C_Morocco.jpg/1024px-Plateau_Yagour%2C_Agdal%2C_Morocco.jpg',
+    kicker: 'Sivatag-élmény • Marrakesh +30 km',
+    summary: 'Köves, hold-szerű fennsík — nem homokdűne. Luxury sátortábor saját WC-vel és AC-vel, tevegelés naplementekor, berber vacsora-show, csillagnézés. Logisztikailag a legközelebbi sivatag-élmény.',
+    rows: [
+      { k: 'Távolság', v: '~30 km Marrakeshtől, ~45 perc autó' },
+      { k: 'Tábor', v: 'Luxury camp: AC, normál ágy, saját WC' },
+      { k: 'Élmény', v: 'Teve, quad, berber vacsora, dobolás' },
+      { k: 'Költség', v: '~70 000 Ft / 2 fő • 1 éj' }
+    ],
+    links: [
+      { label: 'GetYourGuide — Agafay overnight', url: 'https://www.getyourguide.com/marrakesh-l208/marrakech-agafay-desert-overnight-dinner-show-pool-t320348/' }
+    ]
+  },
+  {
+    id: 'agadir',
+    name: 'Agadir',
+    sub: 'Atlanti tengerpart • Kasbah',
+    type: 'beach',
+    lat: 30.4278, lon: -9.5981,
+    labelDir: 'bottom',
+    days: [3, 4, 5],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/South_view_sea_side_from_Kasbah_of_Agadir_Oufella.jpg/1024px-South_view_sea_side_from_Kasbah_of_Agadir_Oufella.jpg',
+    kicker: 'Tengerpart • 10 km homokos part',
+    summary: '10 km homokos strand, óceáni szél, kellemes 22–26 °C. Souk El Had (Marokkó egyik legnagyobb piaca), a domb tetején az Agadir Kasbah libegővel — naplemente-pont.',
+    rows: [
+      { k: 'Eljutás', v: 'Supratours busz Marrakeshből, 4 óra' },
+      { k: 'Souk', v: 'El Had — 6000 stand, pénteken zárva' },
+      { k: 'Kasbah', v: 'Libegő ~50 MAD, naplementekor menj fel' },
+      { k: 'Szállás', v: '2 éj × 60 EUR ≈ 45 000 Ft' }
+    ],
+    links: [
+      { label: 'Agadir — Wikipedia', url: 'https://en.wikipedia.org/wiki/Agadir' },
+      { label: 'Supratours busz', url: 'https://www.supratours.ma/' },
+      { label: 'Booking — Agadir Marina hotel', url: 'https://www.booking.com/searchresults.html?ss=agadir+marina&group_adults=2&checkin=2026-06-13&checkout=2026-06-15' }
+    ]
+  },
+  {
+    id: 'taghazout',
+    name: 'Taghazout',
+    sub: 'Szörfös halászfalu',
+    type: 'sight',
+    lat: 30.5447, lon: -9.7108,
+    labelDir: 'left',
+    days: [4],
+    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Blue_fishing_boats_in_Taghazout%2C_Morocco_%288628196631%29.jpg/1024px-Blue_fishing_boats_in_Taghazout%2C_Morocco_%288628196631%29.jpg',
+    kicker: 'Agadirtól 20 km északra',
+    summary: 'Kék halászhajók, hippi szörfös hangulat, autentikus halétterem (Restaurant Le Spot) a parton. Fél napos kitérő Agadirból, taxival ~20 km.',
+    rows: [
+      { k: 'Távolság', v: '20 km Agadirtól, ~30 perc taxival' },
+      { k: 'Étterem', v: 'Restaurant Le Spot — friss tenger gyümölcsei' },
+      { k: 'Hangulat', v: 'Szörfös, lassú, parti séta' }
+    ],
+    links: [{ label: 'Taghazout — Wikipedia', url: 'https://en.wikipedia.org/wiki/Taghazout' }]
+  },
+  {
+    id: 'paradise',
+    name: 'Paradise Valley',
+    sub: 'Pálmás medencék',
+    type: 'sight',
+    lat: 30.6900, lon: -9.4900,
+    labelDir: 'right',
+    days: [5],
+    img: '',
+    kicker: 'Természetes medencék • fél nap',
+    summary: 'Természetes medencék pálmaligetben, Agadirtól 1 órára. Vegyes vélemények — szemét és kóbor kutyák lehetnek. Alternatíva: egy nyugodt strand-nap Agadirban.',
+    rows: [
+      { k: 'Eljutás', v: 'Agadirból 1 óra autó, fél napos túra' },
+      { k: 'Költség', v: '~25 000 Ft / 2 fő (vezetett túra)' },
+      { k: 'Figyelem', v: 'Vegyes vélemények — alternatíva: strand-nap' }
+    ],
+    links: [
+      { label: 'GetYourGuide — Paradise Valley', url: 'https://www.getyourguide.com/agadir-l1413/agadir-paradise-valley-half-day-guided-trip-t217380/' },
+      { label: 'Paradise Valley — Wikipedia', url: 'https://en.wikipedia.org/wiki/Paradise_Valley,_Morocco' }
+    ]
+  }
+];
+
+const DAYS = [
+  { n: 1, date: 'Csüt 06.11', where: 'Marrakesh',
+    programs: [
+      { time: 'este', loc: 'rak', what: 'Érkezés Marrakeshbe', detail: 'RAK 19:45, taxi a hivatalos pultnál a riadhoz' },
+      { time: 'este', loc: 'marrakesh', what: 'Jemaa el-Fnaa főtér séta', detail: 'Esti nyüzsgés, mesemondók, utcai ételek' }
+    ] },
+  { n: 2, date: 'Pént 06.12', where: 'Marrakesh medina',
+    programs: [
+      { time: 'reggel', loc: 'marrakesh', what: 'Vezetett medina séta', detail: 'Bahia palota, Saadi sírok, Ben Youssef Medresze, szúk',
+        link: 'https://www.getyourguide.com/marrakesh-l208/marrakech-bahia-palace-saadian-tombs-souk-and-medina-tour-t500020/' },
+      { time: 'este', loc: 'marrakesh', what: 'Jemaa el-Fnaa főtér', detail: 'Vacsora teraszról, esti élet' }
+    ] },
+  { n: 3, date: 'Szomb 06.13', where: 'Marrakesh → Agadir',
+    programs: [
+      { time: 'reggel', loc: 'agadir', what: 'Supratours busz', detail: 'Marrakesh → Agadir, 4 óra', link: 'https://www.supratours.ma' },
+      { time: 'd.u.–este', loc: 'agadir', what: 'Strand + Marina vacsora', detail: 'Beérkezés, kipakolás, parti séta' }
+    ] },
+  { n: 4, date: 'Vas 06.14', where: 'Agadir',
+    programs: [
+      { time: 'reggel', loc: 'agadir', what: 'Souk El Had', detail: 'Marokkó egyik legnagyobb piaca (taxi a hotelből)' },
+      { time: 'délután', loc: 'taghazout', what: 'Taghazout — szörfös falu', detail: 'Restaurant Le Spot halétterem, taxi 20 km' },
+      { time: 'este', loc: 'agadir', what: 'Agadir Kasbah naplemente', detail: 'Libegővel a dombra, naplemente-pont' }
+    ] },
+  { n: 5, date: 'Hét 06.15', where: 'Paradise → Marrakesh',
+    programs: [
+      { time: 'reggel', loc: 'paradise', what: 'Paradise Valley', detail: 'Fél napos kirándulás, természetes medencék',
+        link: 'https://www.getyourguide.com/agadir-l1413/agadir-paradise-valley-half-day-guided-trip-t217380/' },
+      { time: 'délután', loc: 'marrakesh', what: 'Supratours busz vissza', detail: 'Agadir → Marrakesh, 4 óra', link: 'https://www.supratours.ma' }
+    ] },
+  { n: 6, date: 'Kedd 06.16', where: 'Marrakesh → Agafay',
+    programs: [
+      { time: 'reggel', loc: 'majorelle', what: 'Majorelle kert + YSL múzeum', detail: 'Kobaltkék pavilonok, kaktuszgyűjtemény', link: 'https://jardinmajorelle.com' },
+      { time: 'd.u.–este', loc: 'agafay', what: 'Agafay overnight', detail: 'Tevegelés naplementekor, vacsora-show, alvás luxury sátorban',
+        link: 'https://www.getyourguide.com/marrakesh-l208/marrakech-agafay-desert-overnight-dinner-show-pool-t320348/' }
+    ] },
+  { n: 7, date: 'Szerd 06.17', where: 'Agafay → Marrakesh',
+    programs: [
+      { time: 'hajnal', loc: 'agafay', what: 'Napfelkelte + reggeli', detail: 'Vissza Marrakeshbe 11:00-ra' },
+      { time: 'délután', loc: 'marrakesh', what: 'Hammam de la Rose', detail: 'Gőz → fekete szappan → kese → argán-masszázs',
+        link: 'https://www.getyourguide.com/marrakesh-l208/hammam-de-la-rose-experience-t187586/' },
+      { time: 'este', loc: 'marrakesh', what: 'Utolsó este Jemaa el-Fnaa', detail: 'Vacsora teraszról' }
+    ] },
+  { n: 8, date: 'Csüt 06.18', where: 'Marrakesh → BUD',
+    programs: [
+      { time: 'délelőtt', loc: 'marrakesh', what: 'Utolsó szúk-kör', detail: 'Fűszer, argán, kerámia, bőr' },
+      { time: 'este', loc: 'rak', what: 'Taxi a reptérre', detail: 'Wizz W6 2460 — RAK 20:20 → BUD 01:30 (06.19)' }
+    ] }
+];
+
+// Útvonal — a napok programjaiból kibontva (sorrendben)
+const ROUTE = (() => {
+  const seq = [];
+  for (const d of DAYS) for (const p of d.programs) {
+    if (seq.length === 0 || seq[seq.length - 1] !== p.loc) seq.push(p.loc);
+  }
+  return seq;
+})();
+
+const COST = {
+  total: '~612 000 Ft',
+  flag: 'Opció A • Agafay + Agadir',
+  items: [
+    'Marrakesh riad 7 éj • 175 e',
+    'Agadir hotel 2 éj • 45 e',
+    'Agafay overnight • 70 e',
+    'Marrakesh–Agadir busz • 12 e',
+    'Medina séta + hammam • 45 e',
+    'Paradise Valley • 25 e',
+    'Belépők (paloták, kert) • 25 e',
+    'Étkezés 7 nap • 90 e',
+    'Taxi + ajándékok • 45 e',
+    'Oltások + biztosítás • 80 e'
+  ]
+};
+
+/* ===========================================================
+   Térkép stílusok — 4 változat
+   =========================================================== */
+const MAP_STYLES = {
+  topo: {
+    name: 'Domborzati',
+    short: 'Domborzati',
+    filter: 'sepia(0.12) saturate(0.95) brightness(1.02) contrast(1.02)',
+    layers: [{
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> · SRTM · &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+      subdomains: 'abc', maxZoom: 17
+    }]
+  },
+  satellite: {
+    name: 'Műholdas',
+    short: 'Műhold',
+    filter: 'saturate(0.85) brightness(0.95) contrast(1.05)',
+    layers: [
+      {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19
+      },
+      {
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> labels',
+        subdomains: 'abcd', maxZoom: 19, opacity: 0.95
+      }
+    ]
+  },
+  street: {
+    name: 'Utcatérkép',
+    short: 'Utca',
+    filter: 'sepia(0.10) saturate(0.92) brightness(1.02) contrast(1.01)',
+    layers: [{
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> · &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20
+    }]
+  }
+};
+
+/* ===========================================================
+   React app
+   =========================================================== */
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+// Pin SVG by type
+function PinSVG({ type, color }) {
+  // Teardrop shape with inner glyph
+  const glyph = (() => {
+    if (type === 'airport') return <path d="M-4,-1 L4,-1 L0,-5 Z M-4,1 L4,1 L0,5 Z" fill="#faf1de" transform="translate(0 0) rotate(45)" />;
+    if (type === 'desert') return <path d="M-6,2 Q-3,-3 0,1 Q3,-4 6,2 Z" fill="#faf1de" />;
+    if (type === 'beach') return <path d="M-5,2 Q-2,-2 0,2 Q2,-2 5,2" fill="none" stroke="#faf1de" strokeWidth="1.8" strokeLinecap="round" />;
+    if (type === 'city') return <circle r="3.5" fill="#faf1de" />;
+    return <circle r="3" fill="#faf1de" />;
+  })();
+  return (
+    <svg viewBox="-15 -38 30 38">
+      <path d="M0,0 C-13,-12 -13,-26 0,-32 C13,-26 13,-12 0,0 Z" fill={color} stroke="#faf1de" strokeWidth="1.5" />
+      <circle cx="0" cy="-22" r="9" fill={color} />
+      <g transform="translate(0,-22)">{glyph}</g>
+    </svg>
+  );
+}
+
+function pinColor(type) {
+  if (type === 'airport') return '#2a1d12';
+  if (type === 'desert') return '#b9532b';
+  if (type === 'beach') return '#1d4ea3';
+  if (type === 'city') return '#8a3a1b';
+  return '#d99135';
+}
+
+function MarkerPin({ loc, selected, onClick }) {
+  const dayLabel = loc.days.length === 1 ? loc.days[0] : `${loc.days[0]}–${loc.days[loc.days.length - 1]}`;
+  return (
+    <div className={`pin ${selected ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); onClick(loc.id); }}>
+      <div className="pin-ring"></div>
+      <div className="pin-body"><PinSVG type={loc.type} color={pinColor(loc.type)} /></div>
+      <div className={`pin-day ${loc.days.length > 1 ? 'multi' : ''}`}>
+        {loc.days.length > 1 ? `N${loc.days[0]}–${loc.days[loc.days.length - 1]}` : `N${loc.days[0]}`}
+      </div>
+      <div className="pin-label">{loc.name}</div>
     </div>
-  </div>
+  );
+}
 
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="section-label">// rólam</div>
-    <h2>Hardver és felhő között.</h2>
-    <p class="about-text">
-      AWS Bedrock-ot, Next.js-t és Python Lambdát használok SaaS termékek építéséhez,
-      miközben ESP32-vel öntözőrendszereket vezérlek a gyümölcsösben.
-      Szeretem, ha <strong>a kód valódi problémát old meg</strong> — legyen az egy
-      magyar kisvállalkozás dokumentumkezelése, vagy egy klassz apróhirdetés kiszúrása
-      az interneten.
-    </p>
-    <p class="about-text">
-      Proxmox home lab, Commodore 64 gyűjtés, és egy <strong>1995-ös BMW F650 Funduro</strong>
-      tartja egyensúlyban a cloud-natív életet.
-    </p>
-    <div class="tags">
-      <span class="tag">AWS CDK</span>
-      <span class="tag">Bedrock / Claude API</span>
-      <span class="tag">Next.js</span>
-      <span class="tag">Python Lambda</span>
-      <span class="tag">DynamoDB</span>
-      <span class="tag">ESP32 / MQTT</span>
-      <span class="tag">React Native</span>
-      <span class="tag">Proxmox</span>
-      <span class="tag">GitLab CI/CD</span>
-      <span class="tag">Telegram bots</span>
+// Detail panel
+function Panel({ loc, onClose }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => { setImgFailed(false); }, [loc && loc.id]);
+  if (!loc) return <div className="panel" />;
+  return (
+    <div className={`panel ${loc ? 'open' : ''}`}>
+      <button className="panel-close" onClick={onClose} aria-label="Bezárás">×</button>
+      {(!loc.img || imgFailed) ? (
+        <div className="panel-img-fallback">
+          <span>{loc.name}<small>{loc.sub}</small></span>
+        </div>
+      ) : (
+        <img className="panel-img" src={loc.img} alt={loc.name} onError={() => setImgFailed(true)} />
+      )}
+      <div className="panel-body">
+        <div className="panel-kicker"><span className="dot"></span>{loc.kicker}</div>
+        <h2>{loc.name}</h2>
+        <div className="sub">{loc.sub}</div>
+        {loc.days && loc.days.length > 0 && (
+          <div className="days">
+            {loc.days.map(d => (
+              <span key={d} className="day-chip"><span className="num">N{d}</span> Nap {d}</span>
+            ))}
+          </div>
+        )}
+        <p>{loc.summary}</p>
+        {loc.rows && loc.rows.map((r, i) => (
+          <div key={i} className="row"><span className="k">{r.k}</span><span className="v">{r.v}</span></div>
+        ))}
+        {loc.links && loc.links.length > 0 && (
+          <div className="links" style={{ marginTop: 16 }}>
+            {loc.links.map((l, i) => (
+              <a key={i} className="link" href={l.url} target="_blank" rel="noopener">↗ {l.label}</a>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </section>
+  );
+}
 
-  <!-- PROJECTS -->
-  <section id="projects">
-    <div class="section-label">// projektek</div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div>
-          <div class="project-name">DocuChat</div>
-          <p class="project-desc">
-            AI-alapú dokumentum-asszisztens SaaS magyar kisvállalkozásoknak.
-            Multi-tenant architektúra AWS Bedrock Knowledge Bases-szel,
-            Next.js frontend Amplify-on, tiered árazás.
-          </p>
-          <div class="project-tech">
-            <span class="tech-pill">AWS Bedrock</span>
-            <span class="tech-pill">Next.js</span>
-            <span class="tech-pill">S3 Vectors</span>
-            <span class="tech-pill">Cognito</span>
-            <span class="tech-pill">DynamoDB</span>
-          </div>
-        </div>
-        <span class="project-status status-active">● aktív</span>
+function Timeline({ onPick, selectedProg }) {
+  return (
+    <div className="timeline">
+      <div className="timeline-head">
+        <h3>Napi program — Opció A (Agafay + Agadir tengerpart)</h3>
+        <div className="meta">2026.06.11. csüt — 06.18. csüt • 7 éj / 8 nap • 2 fő</div>
       </div>
-
-      <div class="project-card">
-        <div>
-          <div class="project-name">OpenClaw Monitor</div>
-          <p class="project-desc">
-            Apróhirdetés-figyelő és AI-alapú pontozórendszer Jófogás és Hardverapró
-            oldalakhoz. Telegram interface, Bedrock-alapú relevanciaszűrő, SQLite deduplikáció.
-          </p>
-          <div class="project-tech">
-            <span class="tech-pill">Python</span>
-            <span class="tech-pill">AWS Bedrock</span>
-            <span class="tech-pill">Telegram API</span>
-            <span class="tech-pill">SQLite</span>
-          </div>
-        </div>
-        <span class="project-status status-active">● aktív</span>
+      <div className="timeline-grid">
+        {DAYS.map(d => {
+          const dayActive = selectedProg && selectedProg.d === d.n;
+          return (
+            <div key={d.n} className={`tl-day ${dayActive ? 'has-active' : ''}`}>
+              <div className="num">NAP {d.n} • {d.date}</div>
+              <div className="where">{d.where}</div>
+              <div className="progs">
+                {d.programs.map((p, i) => {
+                  const isSel = selectedProg && selectedProg.d === d.n && selectedProg.i === i;
+                  return (
+                    <div key={i} className={`tl-prog ${isSel ? 'selected' : ''}`}
+                         onClick={() => p.loc && onPick(p.loc, { d: d.n, i })}>
+                      <span className="t">{p.time}</span>
+                      <span className="body">
+                        <span className="w">{p.what}</span>
+                        {p.detail && <span className="d">{p.detail}</span>}
+                      </span>
+                      {p.link
+                        ? <a className="ext" href={p.link} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} title="Foglalási link">↗</a>
+                        : <span></span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
-
-      <div class="project-card">
-        <div>
-          <div class="project-name">Plant Disease AI</div>
-          <p class="project-desc">
-            Fotóalapú növénybetegség-felismerő React és React Native alkalmazás.
-            Anthropic Vision API, strukturált magyar nyelvű diagnózis, történetelőzmény.
-          </p>
-          <div class="project-tech">
-            <span class="tech-pill">React Native</span>
-            <span class="tech-pill">Claude Vision</span>
-            <span class="tech-pill">AWS Lambda</span>
-          </div>
-        </div>
-        <span class="project-status">kész</span>
-      </div>
-
-      <div class="project-card">
-        <div>
-          <div class="project-name">Okos öntözőrendszer</div>
-          <p class="project-desc">
-            76 bodzafa és gyümölcsfák csepegtetős öntözése ESP32 vezérléssel,
-            AWS IoT Core + MQTT + Bedrock integrációval, két 24VAC zónában.
-          </p>
-          <div class="project-tech">
-            <span class="tech-pill">ESP32</span>
-            <span class="tech-pill">AWS IoT Core</span>
-            <span class="tech-pill">MQTT</span>
-            <span class="tech-pill">Bedrock</span>
-          </div>
-        </div>
-        <span class="project-status">tervezés</span>
-      </div>
-
     </div>
-  </section>
+  );
+}
 
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="section-label">// kontakt</div>
-    <h2>Dolgozzunk együtt.</h2>
-    <ul class="contact-list">
-      <li>
-        <span class="contact-label">GitHub</span>
-        <a href="https://github.com/JozsefHalasi" target="_blank">github.com/JozsefHalasi</a>
-      </li>
-      <li>
-        <span class="contact-label">Email</span>
-        <a href="mailto:halasi.j.g@gmail.com">halasi.j.g@gmail.com</a>
-      </li>
-      <li>
-        <span class="contact-label">Lokáció</span>
-        <span style="color: var(--muted)">Szeged, Magyarország</span>
-      </li>
-    </ul>
-  </section>
+// Render a pin via React into a Leaflet DivIcon
+function buildIconHtml(loc, selected) {
+  const dayLabel = loc.days.length > 1 ? `N${loc.days[0]}–${loc.days[loc.days.length - 1]}` : `N${loc.days[0]}`;
+  const multi = loc.days.length > 1;
+  const color = pinColor(loc.type);
+  const glyphSvg = (() => {
+    if (loc.type === 'airport') return `<g transform="rotate(45)"><path d="M-4,-1 L4,-1 L0,-5 Z M-4,1 L4,1 L0,5 Z" fill="#faf1de"/></g>`;
+    if (loc.type === 'desert') return `<path d="M-6,2 Q-3,-3 0,1 Q3,-4 6,2 Z" fill="#faf1de"/>`;
+    if (loc.type === 'beach') return `<path d="M-5,2 Q-2,-2 0,2 Q2,-2 5,2" fill="none" stroke="#faf1de" stroke-width="1.8" stroke-linecap="round"/>`;
+    if (loc.type === 'city') return `<circle r="3.5" fill="#faf1de"/>`;
+    return `<circle r="3" fill="#faf1de"/>`;
+  })();
 
-  <footer>
-    <span>© 2026 József</span>
-    <span>Szeged · AWS · Builder</span>
-  </footer>
+  return `
+    <div class="pin ${selected ? 'selected' : ''}">
+      <div class="pin-ring"></div>
+      <div class="pin-halo"></div>
+      <div class="pin-body">
+        <svg viewBox="-21 -54 42 54">
+          <path d="M0,0 C-18,-17 -18,-37 0,-46 C18,-37 18,-17 0,0 Z" fill="${color}" stroke="#faf1de" stroke-width="2.5"/>
+          <circle cx="0" cy="-31" r="12" fill="${color}" stroke="#faf1de" stroke-width="1.5"/>
+          <g transform="translate(0,-31) scale(1.2)">${glyphSvg}</g>
+        </svg>
+      </div>
+      <div class="pin-day ${multi ? 'multi' : ''}">${dayLabel}</div>
+      <div class="pin-label dir-${loc.labelDir || 'bottom'}">${loc.name}</div>
+    </div>
+  `;
+}
 
-</div>
+function App() {
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectedProg, setSelectedProg] = useState(null); // {d, i}
+  const [hintFade, setHintFade] = useState(false);
+  const [mapStyle, setMapStyle] = useState('topo');
+  const mapEl = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef({});
+  const tileLayersRef = useRef([]);
+
+  const selected = LOCATIONS.find(l => l.id === selectedId) || null;
+
+  function handlePick(id, prog) {
+    setSelectedId(id);
+    setSelectedProg(prog || null);
+    setHintFade(true);
+    const loc = LOCATIONS.find(l => l.id === id);
+    if (mapRef.current && loc) {
+      mapRef.current.panTo([loc.lat, loc.lon], { animate: true, duration: 0.35 });
+    }
+  }
+
+  // Initialize map once
+  useEffect(() => {
+    if (mapRef.current || !mapEl.current) return;
+    const map = L.map(mapEl.current, {
+      zoomControl: false,
+      attributionControl: true,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      dragging: true
+    });
+    mapRef.current = map;
+
+    // Bounds calc és zoom zár (tile réteget a másik useEffect adja hozzá)
+    const bounds = L.latLngBounds(LOCATIONS.map(l => [l.lat, l.lon]));
+    map.fitBounds(bounds, { padding: [80, 80] });
+    const lockedZoom = map.getZoom();
+    map.setMinZoom(lockedZoom);
+    map.setMaxZoom(lockedZoom);
+    map.setMaxBounds(bounds.pad(0.35));
+
+    // Útvonal — OSRM (valódi autó-útvonal) + fallback egyenes vonalra
+    const waypoints = ROUTE
+      .map(id => LOCATIONS.find(l => l.id === id))
+      .filter(Boolean);
+    const straightCoords = waypoints.map(l => [l.lat, l.lon]);
+
+    let outlineLayer = null, casingLayer = null, dashedLayer = null;
+    function drawRoute(coords) {
+      if (outlineLayer) map.removeLayer(outlineLayer);
+      if (casingLayer) map.removeLayer(casingLayer);
+      if (dashedLayer) map.removeLayer(dashedLayer);
+      // Sötét outline a kontrasztért
+      outlineLayer = L.polyline(coords, {
+        color: '#2a1d12', weight: 11, opacity: 0.22,
+        lineCap: 'round', lineJoin: 'round'
+      }).addTo(map);
+      // Cream casing
+      casingLayer = L.polyline(coords, {
+        color: '#faf1de', weight: 8, opacity: 0.95,
+        lineCap: 'round', lineJoin: 'round'
+      }).addTo(map);
+      // Animált szaggatott terrakotta
+      dashedLayer = L.polyline(coords, {
+        color: '#b9532b', weight: 4.5, opacity: 1,
+        dashArray: '12 14',
+        lineCap: 'butt', lineJoin: 'round',
+        className: 'route-dashed-anim'
+      }).addTo(map);
+    }
+
+    // Kezdetben egyenes vonalakkal (azonnal látsák valami), majd OSRM eredménye felülírja
+    drawRoute(straightCoords);
+
+    /* ----- Repülőgép és autó animáció — állapotgép ----- */
+    const flightStart = [32.4, -5.6];   // belépési pont (ÉK)
+    const flightCtrl  = [32.6, -7.2];   // ív vezérlő pont
+    const flightEnd   = [31.61, -8.04]; // RAK
+
+    function bezPos(t, p0, p1, p2) {
+      const u = 1 - t;
+      return [
+        u*u*p0[0] + 2*u*t*p1[0] + t*t*p2[0],
+        u*u*p0[1] + 2*u*t*p1[1] + t*t*p2[1]
+      ];
+    }
+
+    // Halvány szaggatott repülési ív (oda és vissza is ugyanaz)
+    const pathPts = [];
+    for (let t = 0; t <= 1; t += 0.02) pathPts.push(bezPos(t, flightStart, flightCtrl, flightEnd));
+    L.polyline(pathPts, {
+      color: '#1d4ea3', weight: 1.4, opacity: 0.4,
+      dashArray: '2 8', lineCap: 'round'
+    }).addTo(map);
+
+    // Repülő marker
+    const planeIcon = L.divIcon({
+      className: 'plane-wrap',
+      html: `
+        <svg class="plane-svg" viewBox="-26 -26 52 52" width="52" height="52">
+          <g class="plane-rot" fill="#2a1d12" stroke="#faf1de" stroke-width="1.4" stroke-linejoin="round">
+            <!-- Fő szárnyak (hátranyilazott) -->
+            <path d="M2,-4 L22,9 L22,11 L2,5.5 Z"/>
+            <path d="M-2,-4 L-22,9 L-22,11 L-2,5.5 Z"/>
+            <!-- Vízszintes vezérsíkok (farok) -->
+            <path d="M1.6,12 L9.5,17.5 L9.5,18.6 L1.6,15.5 Z"/>
+            <path d="M-1.6,12 L-9.5,17.5 L-9.5,18.6 L-1.6,15.5 Z"/>
+            <!-- Törzs -->
+            <path d="M0,-22 C1.7,-19.5 2.3,-13 2.3,-3 L2.3,12 C2.3,16 1.5,19 0,20.5 C-1.5,19 -2.3,16 -2.3,12 L-2.3,-3 C-2.3,-13 -1.7,-19.5 0,-22 Z"/>
+          </g>
+        </svg>
+      `,
+      iconSize: [52, 52],
+      iconAnchor: [26, 26]
+    });
+    const planeMarker = L.marker(flightStart, {
+      icon: planeIcon, interactive: false, keyboard: false
+    }).addTo(map);
+    planeMarker.setZIndexOffset(2000);
+
+    // Autó marker (eredetileg elrejtve)
+    const carIcon = L.divIcon({
+      className: 'car-wrap',
+      html: `
+        <svg class="car-svg" viewBox="-18 -18 36 36" width="36" height="36">
+          <g class="car-rot">
+            <rect x="-8" y="-13" width="16" height="26" rx="5" fill="#b9532b" stroke="#faf1de" stroke-width="1.8"/>
+            <path d="M-6,-10 L6,-10 L5,-3 L-5,-3 Z" fill="#2a1d12" opacity="0.55"/>
+            <path d="M-5,4 L5,4 L6,11 L-6,11 Z" fill="#2a1d12" opacity="0.55"/>
+            <rect x="-9" y="-9" width="2.5" height="5" rx="1" fill="#1a120a"/>
+            <rect x="6.5" y="-9" width="2.5" height="5" rx="1" fill="#1a120a"/>
+            <rect x="-9" y="4" width="2.5" height="5" rx="1" fill="#1a120a"/>
+            <rect x="6.5" y="4" width="2.5" height="5" rx="1" fill="#1a120a"/>
+            <circle cx="0" cy="-11" r="1" fill="#faf1de"/>
+            <circle cx="0" cy="-11" r="1" fill="#faf1de" transform="translate(0 0.4)"/>
+          </g>
+        </svg>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+    const carMarker = L.marker(flightEnd, {
+      icon: carIcon, interactive: false, keyboard: false
+    }).addTo(map);
+    carMarker.setZIndexOffset(1900);
+
+    // Pályamintavételező — az autó az OSRM koordináták mentén halad
+    let roadCoords = straightCoords;
+    function buildSampler(coords) {
+      const cum = [0];
+      for (let i = 1; i < coords.length; i++) {
+        const d = Math.hypot(coords[i][0]-coords[i-1][0], coords[i][1]-coords[i-1][1]);
+        cum.push(cum[i-1] + d);
+      }
+      return { coords, cum, total: cum[cum.length-1] || 1 };
+    }
+    let sampler = buildSampler(roadCoords);
+
+    function sampleAt(t, s) {
+      const target = t * s.total;
+      let lo = 1, hi = s.cum.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (s.cum[mid] < target) lo = mid + 1; else hi = mid;
+      }
+      const i = lo;
+      const segLen = s.cum[i] - s.cum[i-1] || 1;
+      const u = (target - s.cum[i-1]) / segLen;
+      const a = s.coords[i-1], b = s.coords[i];
+      return [a[0] + (b[0]-a[0])*u, a[1] + (b[1]-a[1])*u];
+    }
+
+    // OSRM fetch — mikor megjön, frissíti a road coords-ot és a sampler-t
+    const wpString = waypoints.map(l => `${l.lon},${l.lat}`).join(';');
+    fetch(`https://router.project-osrm.org/route/v1/driving/${wpString}?overview=full&geometries=geojson`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.routes && data.routes[0]) {
+          const coords = data.routes[0].geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+          drawRoute(coords);
+          roadCoords = coords;
+          sampler = buildSampler(coords);
+        }
+      })
+      .catch(err => console.warn('OSRM routing failed, using straight lines fallback:', err));
+
+    // Állapotgép: plane in → land → car → plane out → pause → ismétlés
+    const PHASES = [
+      { name: 'planeIn',  dur: 8000 },
+      { name: 'landing',  dur: 700 },
+      { name: 'car',      dur: 28000 },
+      { name: 'boarding', dur: 700 },
+      { name: 'planeOut', dur: 7500 },
+      { name: 'pause',    dur: 2500 }
+    ];
+    const TOTAL = PHASES.reduce((s, p) => s + p.dur, 0);
+
+    function setOp(m, op) {
+      const el = m.getElement();
+      if (el) el.style.opacity = String(op);
+    }
+    function setRot(m, sel, deg) {
+      const el = m.getElement();
+      if (el) {
+        const g = el.querySelector(sel);
+        if (g) g.setAttribute('transform', `rotate(${deg})`);
+      }
+    }
+    function getPhase(elapsed) {
+      let acc = 0;
+      for (const p of PHASES) {
+        if (elapsed < acc + p.dur) return { name: p.name, t: (elapsed - acc) / p.dur };
+        acc += p.dur;
+      }
+      return { name: 'pause', t: 1 };
+    }
+
+    let t0 = performance.now();
+    let lastPlaneHeading = 225;
+    let lastCarHeading = 225;
+    function tick(now) {
+      const elapsed = (now - t0) % TOTAL;
+      const ph = getPhase(elapsed);
+      const t = ph.t;
+      switch (ph.name) {
+        case 'planeIn': {
+          const pos = bezPos(t, flightStart, flightCtrl, flightEnd);
+          const nx  = bezPos(Math.min(1, t+0.005), flightStart, flightCtrl, flightEnd);
+          const heading = Math.atan2(nx[1]-pos[1], nx[0]-pos[0]) * 180/Math.PI;
+          lastPlaneHeading = heading;
+          planeMarker.setLatLng(pos);
+          setRot(planeMarker, '.plane-rot', heading);
+          setOp(planeMarker, 1);
+          setOp(carMarker, 0);
+          break;
+        }
+        case 'landing': {
+          planeMarker.setLatLng(flightEnd);
+          setOp(planeMarker, 1 - t);
+          carMarker.setLatLng(roadCoords[0]);
+          setOp(carMarker, t);
+          break;
+        }
+        case 'car': {
+          setOp(planeMarker, 0);
+          setOp(carMarker, 1);
+          const pos = sampleAt(t, sampler);
+          const nx  = sampleAt(Math.min(1, t+0.002), sampler);
+          const heading = Math.atan2(nx[1]-pos[1], nx[0]-pos[0]) * 180/Math.PI;
+          lastCarHeading = heading;
+          carMarker.setLatLng(pos);
+          setRot(carMarker, '.car-rot', heading);
+          break;
+        }
+        case 'boarding': {
+          carMarker.setLatLng(roadCoords[roadCoords.length-1]);
+          setOp(carMarker, 1 - t);
+          planeMarker.setLatLng(flightEnd);
+          setOp(planeMarker, t);
+          break;
+        }
+        case 'planeOut': {
+          setOp(carMarker, 0);
+          setOp(planeMarker, t > 0.9 ? (1 - t) / 0.1 : 1);
+          const pos = bezPos(t, flightEnd, flightCtrl, flightStart);
+          const nx  = bezPos(Math.min(1, t+0.005), flightEnd, flightCtrl, flightStart);
+          const heading = Math.atan2(nx[1]-pos[1], nx[0]-pos[0]) * 180/Math.PI;
+          lastPlaneHeading = heading;
+          planeMarker.setLatLng(pos);
+          setRot(planeMarker, '.plane-rot', heading);
+          break;
+        }
+        case 'pause': {
+          setOp(planeMarker, 0);
+          setOp(carMarker, 0);
+          break;
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Markers
+    LOCATIONS.forEach(loc => {
+      const icon = L.divIcon({
+        className: 'pin-wrap',
+        html: buildIconHtml(loc, false),
+        iconSize: [42, 54],
+        iconAnchor: [21, 54]
+      });
+      const marker = L.marker([loc.lat, loc.lon], { icon, riseOnHover: true }).addTo(map);
+      marker.on('click', () => handlePick(loc.id));
+      markersRef.current[loc.id] = marker;
+    });
+
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Térkép stílus váltásánál: cseréld le a csempe rétegeket
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Régi rétegek eltávolítása
+    tileLayersRef.current.forEach(l => map.removeLayer(l));
+    tileLayersRef.current = [];
+    const style = MAP_STYLES[mapStyle];
+    if (!style) return;
+    // Filter alkalmazása a tile pane-re
+    const tilePane = map.getPane('tilePane');
+    if (tilePane) tilePane.style.filter = style.filter || 'none';
+    // Új rétegek hozzáadása
+    style.layers.forEach(spec => {
+      const options = {
+        attribution: spec.attribution,
+        maxZoom: spec.maxZoom || 19,
+        opacity: spec.opacity == null ? 1 : spec.opacity
+      };
+      if (spec.subdomains) options.subdomains = spec.subdomains;
+      const layer = L.tileLayer(spec.url, options);
+      layer.addTo(map);
+      tileLayersRef.current.push(layer);
+    });
+  }, [mapStyle]);
+
+  // Update marker selection state
+  useEffect(() => {
+    Object.entries(markersRef.current).forEach(([id, marker]) => {
+      const loc = LOCATIONS.find(l => l.id === id);
+      const isSelected = selectedId === id;
+      const icon = L.divIcon({
+        className: 'pin-wrap',
+        html: buildIconHtml(loc, isSelected),
+        iconSize: [42, 54],
+        iconAnchor: [21, 54]
+      });
+      marker.setIcon(icon);
+      marker.setZIndexOffset(isSelected ? 10000 : 0);
+      if (isSelected) {
+        // setIcon épp újra létrehozta a DOM-ot — a bounce-ot a belső .pin elemen futtatjuk
+        requestAnimationFrame(() => {
+          const el = marker.getElement();
+          if (!el) return;
+          const pinEl = el.querySelector('.pin');
+          if (pinEl) {
+            pinEl.classList.remove('pin-bounce');
+            void pinEl.offsetWidth;
+            pinEl.classList.add('pin-bounce');
+          }
+        });
+      }
+    });
+  }, [selectedId]);
+
+  return (
+    <div className="stage">
+      <div className="topbar">
+        <div className="brand">
+          <span className="eyebrow">Utazási terv • 2026. június 11–18.</span>
+          <h1>Marokkó — <em>Marrakesh</em> és környéke</h1>
+          <div className="sub">Tengerparti opció: Marrakesh (5 éj) + Agadir (2 éj) + Agafay (1 éj). Kattints a pinekre vagy az alsó programlistára a részletekért.</div>
+        </div>
+        <div className="summary-pill">
+          <span className="dot"></span>
+          <span><strong>8 nap</strong> · 7 éj</span>
+          <span>·</span>
+          <span><strong>2 fő</strong></span>
+          <span>·</span>
+          <span>Wizz <strong>W6 2459/2460</strong></span>
+        </div>
+      </div>
+
+      <div className="mapwrap">
+        <div id="map" ref={mapEl}></div>
+
+        <div className="style-picker">
+          <span className="lbl">Térkép</span>
+          {Object.entries(MAP_STYLES).map(([key, style]) => (
+            <button key={key}
+                    className={mapStyle === key ? 'active' : ''}
+                    onClick={() => setMapStyle(key)}>
+              {style.short}
+            </button>
+          ))}
+        </div>
+
+        <div className="cost">
+          <span className="flag">{COST.flag}</span>
+          <div className="lbl">Becsült teljes költség</div>
+          <div className="total">{COST.total}</div>
+          <div className="breakdown">
+            {COST.items.map((it, i) => <div key={i}>· {it}</div>)}
+          </div>
+        </div>
+
+        {selected && <Panel loc={selected} onClose={() => setSelectedId(null)} />}
+
+        <div className={`hint ${hintFade ? 'fade' : ''}`}>
+          Kattints egy pinre — vagy egy programra alul
+        </div>
+      </div>
+
+      <Timeline onPick={handlePick} selectedProg={selectedProg} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
