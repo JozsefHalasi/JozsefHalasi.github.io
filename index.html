@@ -520,6 +520,35 @@
     .panel { width: calc(100% - 36px); right: 18px; }
     .cost { display: none; }
   }
+
+  @media (max-width: 600px) {
+    /* Header */
+    .topbar { padding: 16px 16px 0; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .brand h1 { font-size: 28px; }
+    .summary-pill { font-size: 10px; gap: 8px; padding: 7px 14px; flex-wrap: wrap; }
+
+    /* Map */
+    .mapwrap { margin: 12px 0 0; height: 55vh; min-height: 320px; border-radius: 0; border-left: 0; border-right: 0; }
+
+    /* Style picker */
+    .style-picker { left: 8px; top: 8px; }
+
+    /* Panel — full screen bottom sheet on mobile */
+    .panel {
+      width: 100%; right: 0; top: auto; bottom: 0;
+      max-height: 70vh;
+      border-radius: 12px 12px 0 0;
+      transform: translateY(100%);
+    }
+    .panel.open { transform: translateY(0); }
+
+    /* Timeline */
+    .timeline { margin: 10px 0 20px; border-radius: 0; border-left: 0; border-right: 0; padding: 14px 16px; }
+    .timeline-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .timeline-head h3 { font-size: 18px; }
+    .timeline-grid { grid-template-columns: 1fr; }
+    .tl-day { padding: 12px 14px; }
+  }
 </style>
 </head>
 <body>
