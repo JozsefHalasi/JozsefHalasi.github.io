@@ -1,13 +1,12 @@
-<!doctype html>
-<html lang="hu">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!DOCTYPE html>
+<html lang="hu"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marokkó — Interaktív utazási térkép</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
   :root {
     --ink: #2a1d12;
@@ -103,7 +102,7 @@
   /* Custom pins */
   .pin {
     position: relative;
-    width: 42px; height: 54px;
+    width: 29px; height: 37px;
     transform: translate(-50%, -100%);
     cursor: pointer;
     filter:
@@ -114,6 +113,20 @@
   }
   .pin:hover { transform: translate(-50%, -100%) scale(1.12); z-index: 500; }
   .pin.selected { transform: translate(-50%, -100%) scale(1.25); z-index: 600; }
+  /* Nap-kiemelés: az adott nap helyszínei kigyúlnak, a többi elhalványul */
+  .pin { transition: transform 0.18s, opacity 0.35s, filter 0.35s; }
+  .pin.day-active { filter: drop-shadow(0 0 7px rgba(217,145,53,0.95)) drop-shadow(0 2px 4px rgba(20,12,5,0.5)); }
+  .pin.day-active:not(.selected) { transform: translate(-50%, -100%) scale(1.12); }
+  .pin.day-active .pin-ring {
+    opacity: 0.9;
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 2px rgba(217,145,53,0.4);
+  }
+  .pin.dim { opacity: 0.28; filter: grayscale(0.45) saturate(0.6); }
+  .pin.dim:hover { opacity: 0.75; }
+  /* Kis zoomnál a városon belüli al-pinek (pl. Majorelle) elrejtődnek — ne torlódjanak */
+  .pin-minor { transition: opacity 0.3s; }
+  .leaflet-container.zoom-far .pin-minor { opacity: 0 !important; pointer-events: none; }
   .pin-halo {
     position: absolute; left: 50%; bottom: 0;
     width: 22px; height: 8px;
@@ -124,18 +137,18 @@
   }
   .pin-body {
     position: absolute; left: 0; top: 0;
-    width: 42px; height: 54px;
+    width: 29px; height: 37px;
   }
   .pin-body svg { width: 100%; height: 100%; display: block; }
   .pin-day {
-    position: absolute; top: -8px; right: -12px;
-    min-width: 26px; height: 26px; padding: 0 7px;
+    position: absolute; top: -6px; right: -9px;
+    min-width: 19px; height: 19px; padding: 0 5px;
     border-radius: 999px;
     background: var(--cream); color: var(--ink);
-    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
-    border: 2.5px solid var(--ink);
-    box-shadow: 0 3px 6px rgba(20,12,5,0.5), 0 0 0 2px var(--cream);
+    border: 2px solid var(--ink);
+    box-shadow: 0 2px 4px rgba(20,12,5,0.5), 0 0 0 1.5px var(--cream);
     letter-spacing: 0;
   }
   .pin-day.multi {
@@ -147,11 +160,11 @@
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 6px;
-    font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
+    margin-top: 4px;
+    font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 700;
     color: var(--ink); white-space: nowrap;
     background: var(--cream);
-    padding: 4px 11px;
+    padding: 3px 8px;
     border-radius: 3px;
     border: 1.5px solid var(--ink);
     box-shadow: 0 3px 8px rgba(20,12,5,0.35), 0 0 0 1px rgba(250,241,222,0.6);
@@ -215,7 +228,7 @@
   }
   .pin-ring {
     position: absolute; left: 50%; top: 32%;
-    width: 42px; height: 42px;
+    width: 29px; height: 29px;
     transform: translate(-50%, -50%);
     border-radius: 50%; border: 3px solid var(--terracotta);
     opacity: 0; pointer-events: none;
@@ -381,6 +394,141 @@
   }
   .panel a.link:hover { color: var(--terracotta-deep); }
   .panel .links { display: flex; flex-direction: column; gap: 8px; }
+
+  /* Google Maps gomb */
+  .gmaps-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    margin: 4px 0 4px;
+    background: var(--ink); color: var(--cream);
+    border: 1px solid rgba(20,12,5,0.5); border-radius: 4px;
+    padding: 11px 14px; cursor: pointer; text-decoration: none;
+    font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600;
+    transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
+    box-shadow: 0 4px 12px rgba(20,12,5,0.18);
+  }
+  .gmaps-btn:hover {
+    background: var(--terracotta-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(20,12,5,0.28);
+  }
+  .gmaps-btn .gm-pin {
+    flex: none; width: 22px; height: 22px;
+    display: grid; place-items: center;
+  }
+  .gmaps-btn .gm-pin svg { width: 18px; height: 18px; display: block; }
+  .gmaps-btn .gm-text { display: flex; flex-direction: column; line-height: 1.15; flex: 1; }
+  .gmaps-btn .gm-text small {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-top: 2px;
+  }
+  .gmaps-btn .gm-arrow { flex: none; opacity: 0.7; font-size: 14px; }
+
+  /* Kis Google Maps ikon a sétapontokon */
+  .poi-item .pi-gmap {
+    flex: none; margin-left: auto; width: 28px; height: 28px;
+    display: grid; place-items: center; border-radius: 50%;
+    color: var(--ink-soft); text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .poi-item .pi-gmap:hover { background: var(--ink); color: var(--cream); }
+  .poi-item .pi-gmap svg { width: 15px; height: 15px; display: block; }
+
+  /* Panel — szekciók (program itt + környék) */
+  .panel-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(90,69,48,0.22); }
+  .panel-section-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .here-progs { display: flex; flex-direction: column; gap: 6px; }
+  .here-prog {
+    display: flex; align-items: flex-start; gap: 10px; width: 100%;
+    text-align: left; background: rgba(244,231,207,0.5);
+    border: 1px solid rgba(90,69,48,0.25); border-radius: 4px;
+    padding: 8px 10px; cursor: pointer; font: inherit; color: var(--ink);
+    transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  }
+  .here-prog:hover { background: var(--parchment-2); border-color: var(--terracotta); transform: translateX(2px); }
+  .here-prog.active { background: var(--parchment-2); border-color: var(--terracotta-deep); }
+  .here-prog .hp-day {
+    flex: none; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500;
+    background: var(--ink); color: var(--cream); border-radius: 3px;
+    padding: 3px 6px; line-height: 1; margin-top: 1px;
+  }
+  .here-prog .hp-body { display: flex; flex-direction: column; gap: 2px; }
+  .here-prog .hp-what { font-size: 13px; font-weight: 600; line-height: 1.25; }
+  .here-prog .hp-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .nearby { display: flex; flex-wrap: wrap; gap: 7px; }
+  .nearby-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--cream); border: 1px solid rgba(90,69,48,0.35);
+    border-radius: 999px; padding: 6px 12px 6px 9px; cursor: pointer;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink);
+    transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  }
+  .nearby-chip:hover { background: var(--parchment-2); border-color: var(--terracotta); transform: translateY(-1px); }
+  .nearby-chip .nb-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--cream); }
+
+  /* Vissza az áttekintéshez gomb */
+  .overview-btn {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--cream);
+    border: 1px solid rgba(250,241,222,0.25); border-radius: 999px;
+    padding: 8px 16px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    box-shadow: 0 8px 20px rgba(20,12,5,0.35); backdrop-filter: blur(6px);
+    z-index: 1001; transition: background 0.18s, transform 0.12s;
+  }
+  .overview-btn:hover { background: var(--terracotta-deep); transform: translateX(-50%) translateY(-1px); }
+
+  /* Városon belüli POI markerek + sétaútvonal */
+  .leaflet-container.city-detail .pin-wrap { opacity: 0 !important; pointer-events: none; transition: opacity 0.4s; }
+  .poi-wrap { transition: opacity 0.4s; }
+  .poi { position: relative; width: 30px; height: 30px; }
+  .poi-dot {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--terracotta); color: var(--cream);
+    border: 2.5px solid var(--cream);
+    box-shadow: 0 2px 5px rgba(20,12,5,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+    transition: transform 0.15s;
+  }
+  .poi:hover .poi-dot { transform: translate(-50%, -50%) scale(1.18); }
+  .poi-label {
+    position: absolute; left: 50%; top: calc(50% + 15px); transform: translateX(-50%);
+    white-space: nowrap; background: var(--cream); color: var(--ink);
+    border: 1px solid rgba(90,69,48,0.4); border-radius: 3px;
+    padding: 2px 7px; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 700;
+    box-shadow: 0 2px 5px rgba(20,12,5,0.3); pointer-events: none;
+  }
+
+  /* Panel — séta-útvonal lista */
+  .poi-list { display: flex; flex-direction: column; gap: 4px; }
+  .poi-item {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+    background: transparent; border: none; border-radius: 4px;
+    padding: 7px 8px; cursor: pointer; font: inherit; color: var(--ink);
+    transition: background 0.16s, transform 0.12s; position: relative;
+  }
+  .poi-item:hover { background: rgba(244,231,207,0.7); transform: translateX(2px); }
+  .poi-item .pi-num {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--terracotta); color: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+  }
+  .poi-item .pi-body { display: flex; flex-direction: column; line-height: 1.25; }
+  .poi-item .pi-name { font-size: 13.5px; font-weight: 600; }
+  .poi-item .pi-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft);
+  }
 
   /* Hint */
   .hint {
@@ -554,6 +702,7 @@
 </style>
 </head>
 <body>
+  
   <div id="root"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -586,7 +735,6 @@ const LOCATIONS = [
       { k: 'Belépés', v: 'Adatlap • útlevél-pecsét + reg.szám kötelező' }
     ],
     links: [
-      { label: '📍 Google Maps — RAK reptér', url: 'https://www.google.com/maps?q=31.6068,-8.0363' },
       { label: 'Marrakesh-Menara — Wikipedia', url: 'https://en.wikipedia.org/wiki/Marrakesh_Menara_Airport' },
       { label: 'Wizz Air check-in', url: 'https://wizzair.com/hu-hu/online-services/online-check-in' }
     ]
@@ -599,26 +747,20 @@ const LOCATIONS = [
     lat: 31.6295, lon: -7.9811,
     labelDir: 'right',
     days: [1, 2, 5, 7, 8],
-    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Djemaa_el_Fna.jpg/1024px-Djemaa_el_Fna.jpg',
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/Maroc_Marrakech_Jemaa-el-Fna_Luc_Viatour.JPG?width=1024',
     kicker: 'UNESCO világörökség • medina',
     summary: 'A piros agyagfalú császárváros. A medina szúkjai, paloták, kertek és a Jemaa el-Fnaa esti nyüzsgése. Innen indul minden — 7 éjszakából 5 itt egy AC-s, medencés riadban.',
     rows: [
       { k: 'Stílus', v: 'Mór–andalúz, berber' },
-      { k: 'Szállás', v: 'Riad 7 éj, AC + medence • ~175 e Ft / 2 fő' },
-      { k: 'Belépők', v: 'Bahia ~70 MAD • Saadi ~70 MAD • Ben Youssef ~50 MAD' },
+      { k: 'Szállás', v: 'Riad Anya & SPA • 149 Derb Sidi M’Barek' },
+      { k: 'Belépők', v: 'Bahia ~70 • Saadi ~70 • El Badi ~70 • Ben Youssef ~50 MAD' },
       { k: 'Mikor', v: 'Esti séta 19:00 után, paloták délelőtt' },
       { k: 'Hammam', v: 'gőz → fekete szappan → kese → argán-masszázs' }
     ],
     links: [
-      { label: '📍 Google Maps — Riad Anya & SPA', url: 'https://www.google.com/maps?q=31.6192,-7.9950' },
-      { label: '📍 Google Maps — Jemaa el-Fnaa', url: 'https://www.google.com/maps?q=31.6258,-7.9891' },
-      { label: '📍 Google Maps — Bahia palota', url: 'https://www.google.com/maps?q=31.6213,-7.9842' },
-      { label: '📍 Google Maps — Saadi sírok', url: 'https://www.google.com/maps?q=31.6175,-7.9888' },
-      { label: '📍 Google Maps — Ben Youssef Medresze', url: 'https://www.google.com/maps?q=31.6314,-7.9863' },
-      { label: '📍 Google Maps — Nomad étterem (rooftop)', url: 'https://www.google.com/maps?q=31.6291,-7.9892' },
-      { label: '📍 Google Maps — Marrakech CTM buszállomás', url: 'https://www.google.com/maps?q=31.6293,-8.0185' },
       { label: 'Jemaa el-Fnaa — Wikipedia', url: 'https://en.wikipedia.org/wiki/Jemaa_el-Fnaa' },
       { label: 'Bahia Palace — Wikipedia', url: 'https://en.wikipedia.org/wiki/Bahia_Palace' },
+      { label: 'Booking — Marrakesh medina riad', url: 'https://www.booking.com/searchresults.html?ss=marrakech+medina&group_adults=2&checkin=2026-06-11&checkout=2026-06-18' },
       { label: 'GetYourGuide — Medina séta', url: 'https://www.getyourguide.com/marrakesh-l208/marrakech-bahia-palace-saadian-tombs-souk-and-medina-tour-t500020/' },
       { label: 'Hammam de la Rose', url: 'https://hammamdelarose.com/' }
     ]
@@ -628,6 +770,7 @@ const LOCATIONS = [
     name: 'Majorelle kert',
     sub: 'YSL kobaltkék oázisa',
     type: 'sight',
+    minor: true,
     lat: 31.6418, lon: -7.9886,
     labelDir: 'top',
     days: [6],
@@ -637,14 +780,10 @@ const LOCATIONS = [
     rows: [
       { k: 'Belépő', v: 'Kert ~120 MAD • YSL múzeum ~100 MAD' },
       { k: 'Időzítés', v: 'Nyitás után 8:30, vagy 17:00 után' },
+      { k: 'Ebéd', v: 'Café des Negociants — Gueliz' },
       { k: 'Tipp', v: 'Online jegy ajánlott, sorbanállás nélkül' }
     ],
     links: [
-      { label: '📍 Google Maps — Le Jardin Majorelle', url: 'https://www.google.com/maps?q=31.6418,-7.9886' },
-      { label: '📍 Google Maps — YSL Múzeum', url: 'https://www.google.com/maps?q=31.6418,-7.9898' },
-      { label: '📍 Google Maps — Berber Múzeum', url: 'https://www.google.com/maps?q=31.6418,-7.9889' },
-      { label: '📍 Google Maps — Café des Negociants (ebéd)', url: 'https://www.google.com/maps?q=31.6364,-8.0093' },
-      { label: '📍 Google Maps — Agafay pickup pont (mecset)', url: 'https://www.google.com/maps?q=31.6189,-7.9890' },
       { label: 'jardinmajorelle.com', url: 'https://www.jardinmajorelle.com/en/' },
       { label: 'Majorelle Garden — Wikipedia', url: 'https://en.wikipedia.org/wiki/Majorelle_Garden' }
     ]
@@ -662,12 +801,12 @@ const LOCATIONS = [
     summary: 'Köves, hold-szerű fennsík — nem homokdűne. Luxury sátortábor saját WC-vel és AC-vel, tevegelés naplementekor, berber vacsora-show, csillagnézés. Logisztikailag a legközelebbi sivatag-élmény.',
     rows: [
       { k: 'Távolság', v: '~30 km Marrakeshtől, ~45 perc autó' },
+      { k: 'Pickup', v: 'Moulay al-Yazid mecsetnél (medina dél)' },
       { k: 'Tábor', v: 'Luxury camp: AC, normál ágy, saját WC' },
       { k: 'Élmény', v: 'Teve, quad, berber vacsora, dobolás' },
       { k: 'Költség', v: '~70 000 Ft / 2 fő • 1 éj' }
     ],
     links: [
-      { label: '📍 Google Maps — Agafay sivatag', url: 'https://www.google.com/maps?q=31.5167,-8.1500' },
       { label: 'GetYourGuide — Agafay overnight', url: 'https://www.getyourguide.com/marrakesh-l208/marrakech-agafay-desert-overnight-dinner-show-pool-t320348/' }
     ]
   },
@@ -679,24 +818,19 @@ const LOCATIONS = [
     lat: 30.4278, lon: -9.5981,
     labelDir: 'bottom',
     days: [3, 4, 5],
-    img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/South_view_sea_side_from_Kasbah_of_Agadir_Oufella.jpg/1024px-South_view_sea_side_from_Kasbah_of_Agadir_Oufella.jpg',
+    img: 'https://commons.wikimedia.org/wiki/Special:FilePath/South_view_sea_side_from_Kasbah_of_Agadir_Oufella.jpg?width=1024',
     kicker: 'Tengerpart • 10 km homokos part',
     summary: '10 km homokos strand, óceáni szél, kellemes 22–26 °C. Souk El Had (Marokkó egyik legnagyobb piaca), a domb tetején az Agadir Kasbah libegővel — naplemente-pont.',
     rows: [
-      { k: 'Eljutás', v: 'Supratours busz Marrakeshből, 4 óra' },
+      { k: 'Eljutás', v: 'CTM busz Marrakeshből, ~4 óra' },
       { k: 'Souk', v: 'El Had — 6000 stand, pénteken zárva' },
-      { k: 'Kasbah', v: 'Libegő ~50 MAD, naplementekor menj fel' },
-      { k: 'Szállás', v: '2 éj × 60 EUR ≈ 45 000 Ft' }
+      { k: 'Kasbah', v: 'Felvonó ~50 MAD, naplementekor menj fel' },
+      { k: 'Szállás', v: 'Atlantic Hôtel • Av. Hassan II • 2 éj' }
     ],
     links: [
-      { label: '📍 Google Maps — Atlantic Hôtel (szállás)', url: 'https://www.google.com/maps?q=30.4194,-9.5976' },
-      { label: '📍 Google Maps — Marina d\'Agadir', url: 'https://www.google.com/maps?q=30.4197,-9.6080' },
-      { label: '📍 Google Maps — Plage d\'Agadir (strand)', url: 'https://www.google.com/maps?q=30.4170,-9.6020' },
-      { label: '📍 Google Maps — Souk El Had piac', url: 'https://www.google.com/maps?q=30.4280,-9.6010' },
-      { label: '📍 Google Maps — Kasbah Oufella (felvonó)', url: 'https://www.google.com/maps?q=30.4282,-9.6248' },
-      { label: '📍 Google Maps — Agadir CTM buszállomás', url: 'https://www.google.com/maps?q=30.4232,-9.5994' },
       { label: 'Agadir — Wikipedia', url: 'https://en.wikipedia.org/wiki/Agadir' },
-      { label: 'Supratours busz', url: 'https://www.supratours.ma/' }
+      { label: 'CTM busz', url: 'https://ctm.ma/' },
+      { label: 'Booking — Atlantic Hôtel Agadir', url: 'https://www.booking.com/searchresults.html?ss=atlantic+hotel+agadir&group_adults=2&checkin=2026-06-13&checkout=2026-06-15' }
     ]
   },
   {
@@ -704,7 +838,7 @@ const LOCATIONS = [
     name: 'Taghazout',
     sub: 'Szörfös halászfalu',
     type: 'sight',
-    lat: 30.5447, lon: -9.7108,
+    lat: 30.5430, lon: -9.7106,
     labelDir: 'left',
     days: [4],
     img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Blue_fishing_boats_in_Taghazout%2C_Morocco_%288628196631%29.jpg/1024px-Blue_fishing_boats_in_Taghazout%2C_Morocco_%288628196631%29.jpg',
@@ -715,11 +849,7 @@ const LOCATIONS = [
       { k: 'Étterem', v: 'Restaurant Le Spot — friss tenger gyümölcsei' },
       { k: 'Hangulat', v: 'Szörfös, lassú, parti séta' }
     ],
-    links: [
-      { label: '📍 Google Maps — Taghazout', url: 'https://www.google.com/maps?q=30.5430,-9.7106' },
-      { label: '📍 Google Maps — Restaurant Le Spot', url: 'https://www.google.com/maps?q=30.5429,-9.7113' },
-      { label: 'Taghazout — Wikipedia', url: 'https://en.wikipedia.org/wiki/Taghazout' }
-    ]
+    links: [{ label: 'Taghazout — Wikipedia', url: 'https://en.wikipedia.org/wiki/Taghazout' }]
   },
   {
     id: 'paradise',
@@ -731,15 +861,14 @@ const LOCATIONS = [
     days: [5],
     img: '',
     kicker: 'Természetes medencék • fél nap',
-    summary: 'Természetes medencék pálmaligetben, Agadirtól 1 órára. Vegyes vélemények — szemét és kóbor kutyák lehetnek. Alternatíva: egy nyugodt strand-nap Agadirban.',
+    summary: 'Természetes medencék pálmaligetben, Agadirtól 1 órára. Visszafelé argán-olaj kooperatíva — amlou-kóstoló! Vegyes vélemények a völgyről — alternatíva: egy nyugodt strand-nap Agadirban.',
     rows: [
       { k: 'Eljutás', v: 'Agadirból 1 óra autó, fél napos túra' },
+      { k: 'Útközben', v: 'Argán-olaj kooperatíva — AMLOU!' },
       { k: 'Költség', v: '~25 000 Ft / 2 fő (vezetett túra)' },
       { k: 'Figyelem', v: 'Vegyes vélemények — alternatíva: strand-nap' }
     ],
     links: [
-      { label: '📍 Google Maps — Paradise Valley', url: 'https://www.google.com/maps?q=30.6447,-9.4922' },
-      { label: '📍 Google Maps — Argán-olaj kooperatíva', url: 'https://www.google.com/maps?q=30.6232,-9.5083' },
       { label: 'GetYourGuide — Paradise Valley', url: 'https://www.getyourguide.com/agadir-l1413/agadir-paradise-valley-half-day-guided-trip-t217380/' },
       { label: 'Paradise Valley — Wikipedia', url: 'https://en.wikipedia.org/wiki/Paradise_Valley,_Morocco' }
     ]
@@ -749,57 +878,50 @@ const LOCATIONS = [
 const DAYS = [
   { n: 1, date: 'Csüt 06.11', where: 'Marrakesh',
     programs: [
-      { time: 'este', loc: 'rak', what: 'Érkezés Marrakeshbe', detail: 'RAK 19:45, taxi a hivatalos pultnál • Riad Anya & SPA, 149 Derb Sidi M\'Barek' },
+      { time: 'este', loc: 'rak', what: 'Érkezés Marrakeshbe', detail: 'RAK 19:45, taxi a Riad Anya & SPA-hoz (149 Derb Sidi M’Barek)' },
       { time: 'este', loc: 'marrakesh', what: 'Jemaa el-Fnaa főtér séta', detail: 'Esti nyüzsgés, mesemondók, utcai ételek' }
     ] },
   { n: 2, date: 'Pént 06.12', where: 'Marrakesh medina',
     programs: [
-      { time: 'reggel', loc: 'marrakesh', what: 'Vezetett medina séta', detail: 'Találkozó: 72 Rue des Banques • Bahia palota, Saadi sírok, Ben Youssef Medresze, El Badi palota',
+      { time: 'reggel', loc: 'marrakesh', what: 'Vezetett medina séta', detail: 'Találkozó: 72 Rue des Banques • Bahia, El Badi, Saadi sírok, Ben Youssef',
         link: 'https://www.getyourguide.com/marrakesh-l208/marrakech-bahia-palace-saadian-tombs-souk-and-medina-tour-t500020/' },
-      { time: 'délután', loc: 'marrakesh', what: 'Nomad étterem (rooftop ebéd)', detail: 'Tetőterasz a szúk felett, friss marokkói konyha',
-        link: 'https://www.google.com/maps?q=31.6291,-7.9892' },
+      { time: 'dél', loc: 'marrakesh', what: 'Nomad — rooftop ebéd', detail: 'Modern marokkói konyha, kilátás a medinára' },
       { time: 'este', loc: 'marrakesh', what: 'Jemaa el-Fnaa főtér', detail: 'Vacsora teraszról, esti élet' }
     ] },
   { n: 3, date: 'Szomb 06.13', where: 'Marrakesh → Agadir',
     programs: [
-      { time: 'reggel', loc: 'agadir', what: 'Supratours busz', detail: 'Marrakech CTM állomásról → Agadir, 4 óra', link: 'https://www.supratours.ma' },
-      { time: 'd.u.–este', loc: 'agadir', what: 'Strand + Marina vacsora', detail: 'Atlantic Hôtel bejelentkezés, Plage d\'Agadir, Marina séta' }
+      { time: 'reggel', loc: 'agadir', what: 'CTM busz', detail: 'Marrakech CTM pályaudvar → Agadir CTM, ~4 óra', link: 'https://ctm.ma' },
+      { time: 'd.u.–este', loc: 'agadir', what: 'Strand + Marina vacsora', detail: 'Beérkezés az Atlantic Hôtelbe, parti séta, Marina' }
     ] },
   { n: 4, date: 'Vas 06.14', where: 'Agadir',
     programs: [
-      { time: 'reggel', loc: 'agadir', what: 'Souk El Had piac', detail: 'Marokkó egyik legnagyobb piaca — 6000 stand (taxi a hotelből)' },
-      { time: 'délután', loc: 'taghazout', what: 'Taghazout — szörfös falu', detail: 'Restaurant Le Spot • friss tenger gyümölcsei a parton, taxi 20 km' },
-      { time: 'este', loc: 'agadir', what: 'Agadir Kasbah naplemente', detail: 'Libegő fel • Allah Király Haza felirat + panoráma' }
+      { time: 'reggel', loc: 'agadir', what: 'Souk El Had', detail: 'Marokkó egyik legnagyobb piaca (taxi a hotelből)' },
+      { time: 'délután', loc: 'taghazout', what: 'Taghazout — szörfös falu', detail: 'Restaurant Le Spot halétterem, taxi 20 km' },
+      { time: 'este', loc: 'agadir', what: 'Agadir Kasbah naplemente', detail: 'Felvonóval a dombra — panoráma + „Allah, Király, Haza” felirat' }
     ] },
-  { n: 5, date: 'Hét 06.15', where: 'Agadir → Paradise → Marrakesh',
+  { n: 5, date: 'Hét 06.15', where: 'Paradise → Marrakesh',
     programs: [
-      { time: 'reggel', loc: 'paradise', what: 'Paradise Valley', detail: 'Fél napos kirándulás • természetes medencék pálmaligetben',
+      { time: 'reggel', loc: 'paradise', what: 'Paradise Valley', detail: 'Fél napos kirándulás, természetes medencék',
         link: 'https://www.getyourguide.com/agadir-l1413/agadir-paradise-valley-half-day-guided-trip-t217380/' },
-      { time: 'útközben', loc: 'paradise', what: 'Argán-olaj kooperatíva', detail: 'AMLOU! Friss argán-olaj és mandulakrém útközben',
-        link: 'https://www.google.com/maps?q=30.6232,-9.5083' },
-      { time: 'délután', loc: 'marrakesh', what: 'Supratours busz vissza', detail: 'Agadir CTM → Marrakesh, 4 óra', link: 'https://www.supratours.ma' }
+      { time: 'dél', loc: 'paradise', what: 'Argán-olaj kooperatíva', detail: 'AMLOU-kóstoló + vásárlás útközben' },
+      { time: 'délután', loc: 'marrakesh', what: 'CTM busz vissza', detail: 'Agadir → Marrakesh, ~4 óra', link: 'https://ctm.ma' }
     ] },
   { n: 6, date: 'Kedd 06.16', where: 'Marrakesh → Agafay',
     programs: [
-      { time: 'reggel', loc: 'majorelle', what: 'Majorelle kert + YSL múzeum + Berber Múzeum', detail: 'Kobaltkék pavilonok, kaktuszgyűjtemény — online jegy ajánlott!', link: 'https://jardinmajorelle.com' },
-      { time: 'ebéd', loc: 'majorelle', what: 'Café des Negociants (Gueliz)', detail: 'Pihenő az európai negyedben Majorelle után',
-        link: 'https://www.google.com/maps?q=31.6364,-8.0093' },
-      { time: 'd.u.–este', loc: 'agafay', what: 'Agafay overnight', detail: 'Pickup: Moulay al-Yazid mecset • tevegelés, vacsora-show, luxury sátor',
+      { time: 'reggel', loc: 'majorelle', what: 'Majorelle kert + YSL múzeum', detail: 'Kobaltkék pavilonok, Berber múzeum • ebéd: Café des Negociants', link: 'https://jardinmajorelle.com' },
+      { time: 'd.u.–este', loc: 'agafay', what: 'Agafay overnight', detail: 'Pickup: Moulay al-Yazid mecset • teve naplementekor, vacsora-show',
         link: 'https://www.getyourguide.com/marrakesh-l208/marrakech-agafay-desert-overnight-dinner-show-pool-t320348/' }
     ] },
-  { n: 7, date: 'Szerd 06.17', where: 'Agafay → Marrakesh (utolsó este)',
+  { n: 7, date: 'Szerd 06.17', where: 'Agafay → Marrakesh',
     programs: [
       { time: 'hajnal', loc: 'agafay', what: 'Napfelkelte + reggeli', detail: 'Vissza Marrakeshbe 11:00-ra' },
       { time: 'délután', loc: 'marrakesh', what: 'Hammam de la Rose', detail: 'Gőz → fekete szappan → kese → argán-masszázs',
         link: 'https://www.getyourguide.com/marrakesh-l208/hammam-de-la-rose-experience-t187586/' },
-      { time: 'este', loc: 'marrakesh', what: 'Le Grand Balcon — utolsó vacsora', detail: 'Café Glacier rooftop • Jemaa el-Fnaa felett, utolsó naplemente',
-        link: 'https://www.google.com/maps?q=31.6256,-7.9893' }
+      { time: 'este', loc: 'marrakesh', what: 'Utolsó este Jemaa el-Fnaa', detail: 'Le Grand Balcon du Café Glacier — rooftop vacsora a tér felett' }
     ] },
   { n: 8, date: 'Csüt 06.18', where: 'Marrakesh → BUD',
     programs: [
-      { time: 'délelőtt', loc: 'marrakesh', what: 'Le Jardin Secret + torony', detail: 'Rejtett riad-kert a medinában, panorámás torony',
-        link: 'https://www.google.com/maps?q=31.6298,-7.9904' },
-      { time: 'délelőtt', loc: 'marrakesh', what: 'Utolsó szúk-kör', detail: 'Fűszer, argán, kerámia, bőr — Marrakesh medina szúk' },
+      { time: 'délelőtt', loc: 'marrakesh', what: 'Le Jardin Secret + utolsó szúk-kör', detail: 'Kilátótorony • fűszer, argán, kerámia, bőr' },
       { time: 'este', loc: 'rak', what: 'Taxi a reptérre', detail: 'Wizz W6 2460 — RAK 20:20 → BUD 01:30 (06.19)' }
     ] }
 ];
@@ -864,13 +986,41 @@ const MAP_STYLES = {
   street: {
     name: 'Utcatérkép',
     short: 'Utca',
-    filter: 'sepia(0.10) saturate(0.92) brightness(1.02) contrast(1.01)',
+    filter: 'saturate(0.72) sepia(0.18) brightness(1.03) contrast(0.98)',
     layers: [{
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> · &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 20
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
     }]
   }
+};
+
+/* ===========================================================
+   Városon belüli POI-k (sétapontok) — Marrakesh medina + Agadir
+   =========================================================== */
+const POIS = {
+  marrakesh: [
+    { id: 'riad',       name: 'Riad Anya & SPA',      sub: 'Szállás • 149 Derb Sidi M’Barek', lat: 31.6192, lon: -7.9950, order: 1 },
+    { id: 'saadian',    name: 'Saadi sírok',          sub: 'Mauzóleum',         lat: 31.6175, lon: -7.9888, order: 2 },
+    { id: 'elbadi',     name: 'El Badi palota',       sub: 'Romkert, gólyák',   lat: 31.6184, lon: -7.9870, order: 3 },
+    { id: 'bahia',      name: 'Bahia palota',         sub: 'Palota',            lat: 31.6213, lon: -7.9842, order: 4 },
+    { id: 'banques',    name: '72 Rue des Banques',   sub: 'Vezetett séta találkozó', lat: 31.6240, lon: -7.9870, order: 5 },
+    { id: 'jemaa',      name: 'Jemaa el-Fnaa',        sub: 'Főtér',             lat: 31.6258, lon: -7.9891, order: 6 },
+    { id: 'souk',       name: 'Szúkok',               sub: 'Bazársor • vásárlás', lat: 31.6263, lon: -7.9883, order: 7 },
+    { id: 'nomad',      name: 'Nomad étterem',        sub: 'Rooftop ebéd',      lat: 31.6291, lon: -7.9892, order: 8 },
+    { id: 'jardinsecret', name: 'Le Jardin Secret',   sub: 'Kert + torony',     lat: 31.6298, lon: -7.9904, order: 9 },
+    { id: 'benyoussef', name: 'Ben Youssef Medresze', sub: 'Korániskola',       lat: 31.6314, lon: -7.9863, order: 10 },
+    { id: 'hammam',     name: 'Hammam de la Rose',    sub: 'Hagyományos fürdő', lat: 31.6322, lon: -7.9920, order: 11 }
+  ],
+  agadir: [
+    { id: 'ctm',      name: 'CTM buszállomás',       sub: 'Érkezés Marrakeshből', lat: 30.4232, lon: -9.5994, order: 1 },
+    { id: 'atlantic', name: 'Atlantic Hôtel',        sub: 'Szállás • Av. Hassan II', lat: 30.4194, lon: -9.5976, order: 2 },
+    { id: 'strand',   name: 'Plage d’Agadir',        sub: 'Strand-sétány',      lat: 30.4170, lon: -9.6020, order: 3 },
+    { id: 'marina',   name: 'Marina d’Agadir',       sub: 'Kikötő, éttermek',   lat: 30.4197, lon: -9.6080, order: 4 },
+    { id: 'soukelhad', name: 'Souk El Had',           sub: 'Piac • 6000 stand',  lat: 30.4280, lon: -9.6010, order: 5 },
+    { id: 'felvono',  name: 'Kasbah felvonó',        sub: 'Alsó állomás',       lat: 30.4282, lon: -9.6248, order: 6 },
+    { id: 'kasbah',   name: 'Kasbah Oufella',        sub: 'Panoráma • naplemente', lat: 30.4283, lon: -9.6291, order: 7 }
+  ]
 };
 
 /* ===========================================================
@@ -897,12 +1047,55 @@ function PinSVG({ type, color }) {
   );
 }
 
+// Google Maps URL — koordinátára dob tűt + helynevet ad (navigációhoz)
+function gmapsUrl(lat, lon, name) {
+  const q = name ? `${lat},${lon}` : `${lat},${lon}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+// Google Maps "G" pin glyph
+function GMapsGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z" fill="#faf1de" opacity="0.18" />
+      <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z" fill="currentColor" />
+    </svg>
+  );
+}
+
 function pinColor(type) {
   if (type === 'airport') return '#2a1d12';
   if (type === 'desert') return '#b9532b';
   if (type === 'beach') return '#1d4ea3';
   if (type === 'city') return '#8a3a1b';
   return '#d99135';
+}
+
+// Két pont távolsága km-ben (haversine) — a földrajzi klaszterezéshez
+function distKm(a, b) {
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
+  const s = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+// Egy helyszín "környéke": a 60 km-en belüli helyszínek (önmagát is beleértve)
+function clusterOf(loc) {
+  return LOCATIONS.filter(l => distKm(l, loc) <= 60);
+}
+// Egy helyszínhez tartozó programok a napokból kibontva (sorrendben)
+function programsAtLoc(locId) {
+  const out = [];
+  DAYS.forEach(d => d.programs.forEach((p, i) => {
+    if (p.loc === locId) out.push({ dayN: d.n, date: d.date, time: p.time, what: p.what, i });
+  }));
+  return out;
+}
+// Egy adott nap helyszínei (a programjaiból, ismétlés nélkül, sorrendben)
+function dayLocations(dayN) {
+  const d = DAYS.find(x => x.n === dayN);
+  if (!d) return [];
+  const ids = [...new Set(d.programs.map(p => p.loc).filter(Boolean))];
+  return ids.map(id => LOCATIONS.find(l => l.id === id)).filter(Boolean);
 }
 
 function MarkerPin({ loc, selected, onClick }) {
@@ -920,10 +1113,13 @@ function MarkerPin({ loc, selected, onClick }) {
 }
 
 // Detail panel
-function Panel({ loc, onClose }) {
+function Panel({ loc, onClose, onPickSibling, onPickProg, onPickPoi, selectedProg }) {
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => { setImgFailed(false); }, [loc && loc.id]);
   if (!loc) return <div className="panel" />;
+  const herePrograms = programsAtLoc(loc.id);
+  const siblings = clusterOf(loc).filter(l => l.id !== loc.id);
+  const pois = POIS[loc.id] ? [...POIS[loc.id]].sort((a, b) => a.order - b.order) : [];
   return (
     <div className={`panel ${loc ? 'open' : ''}`}>
       <button className="panel-close" onClick={onClose} aria-label="Bezárás">×</button>
@@ -949,6 +1145,66 @@ function Panel({ loc, onClose }) {
         {loc.rows && loc.rows.map((r, i) => (
           <div key={i} className="row"><span className="k">{r.k}</span><span className="v">{r.v}</span></div>
         ))}
+
+        <a className="gmaps-btn" href={gmapsUrl(loc.lat, loc.lon, loc.name)} target="_blank" rel="noopener">
+          <span className="gm-pin"><GMapsGlyph /></span>
+          <span className="gm-text">Megnyitás Google Maps-ben<small>Navigáció · {loc.name}</small></span>
+          <span className="gm-arrow">↗</span>
+        </a>
+
+        {pois.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title">{loc.id === 'marrakesh' ? 'Séta-útvonal a medinában' : `Séta-útvonal • ${loc.name}`}</div>
+            <div className="poi-list">
+              {pois.map((p, i) => (
+                <button key={p.id} className="poi-item" onClick={() => onPickPoi && onPickPoi(p)}>
+                  <span className="pi-num">{i + 1}</span>
+                  <span className="pi-body">
+                    <span className="pi-name">{p.name}</span>
+                    <span className="pi-sub">{p.sub}</span>
+                  </span>
+                  <a className="pi-gmap" href={gmapsUrl(p.lat, p.lon, p.name)} target="_blank" rel="noopener" title="Megnyitás Google Maps-ben" onClick={e => e.stopPropagation()}><GMapsGlyph /></a>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {herePrograms.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title">Program ezen a helyen</div>
+            <div className="here-progs">
+              {herePrograms.map((p, i) => {
+                const active = selectedProg && selectedProg.d === p.dayN && selectedProg.i === p.i;
+                return (
+                  <button key={i} className={`here-prog ${active ? 'active' : ''}`}
+                          onClick={() => onPickProg && onPickProg(p.dayN, p.i)}>
+                    <span className="hp-day">N{p.dayN}</span>
+                    <span className="hp-body">
+                      <span className="hp-what">{p.what}</span>
+                      <span className="hp-meta">{p.date} • {p.time}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {siblings.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title">A környéken</div>
+            <div className="nearby">
+              {siblings.map(s => (
+                <button key={s.id} className="nearby-chip" onClick={() => onPickSibling && onPickSibling(s.id)}>
+                  <span className="nb-dot" style={{ background: pinColor(s.type) }}></span>
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loc.links && loc.links.length > 0 && (
           <div className="links" style={{ marginTop: 16 }}>
             {loc.links.map((l, i) => (
@@ -1002,7 +1258,12 @@ function Timeline({ onPick, selectedProg }) {
 }
 
 // Render a pin via React into a Leaflet DivIcon
-function buildIconHtml(loc, selected) {
+function buildIconHtml(loc, selected, opts) {
+  opts = opts || {};
+  const cls = ['pin'];
+  if (selected) cls.push('selected');
+  if (opts.dayActive) cls.push('day-active');
+  if (opts.dim) cls.push('dim');
   const dayLabel = loc.days.length > 1 ? `N${loc.days[0]}–${loc.days[loc.days.length - 1]}` : `N${loc.days[0]}`;
   const multi = loc.days.length > 1;
   const color = pinColor(loc.type);
@@ -1015,7 +1276,7 @@ function buildIconHtml(loc, selected) {
   })();
 
   return `
-    <div class="pin ${selected ? 'selected' : ''}">
+    <div class="${cls.join(' ')}">
       <div class="pin-ring"></div>
       <div class="pin-halo"></div>
       <div class="pin-body">
@@ -1034,23 +1295,107 @@ function buildIconHtml(loc, selected) {
 function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [selectedProg, setSelectedProg] = useState(null); // {d, i}
+  const [focusedDay, setFocusedDay] = useState(null); // melyik nap van kiemelve a térképen
+  const [cityDetail, setCityDetail] = useState(null); // melyik város POI-jai látszanak
   const [hintFade, setHintFade] = useState(false);
-  const [mapStyle, setMapStyle] = useState('topo');
+  const [mapStyle, setMapStyle] = useState('street');
   const mapEl = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const tileLayersRef = useRef([]);
+  const poiLayersRef = useRef([]);
 
   const selected = LOCATIONS.find(l => l.id === selectedId) || null;
+
+  // Egy nap helyszíneire zoomol — szorosabban, mint a klaszter
+  function focusDay(dayN) {
+    const map = mapRef.current;
+    const locs = dayLocations(dayN);
+    if (!map || !locs.length) return;
+    if (locs.length === 1) {
+      map.flyTo([locs[0].lat, locs[0].lon], 14, { duration: 0.9 });
+    } else {
+      const b = L.latLngBounds(locs.map(l => [l.lat, l.lon]));
+      map.flyToBounds(b, {
+        paddingTopLeft: [90, 120],
+        paddingBottomRight: [410, 150],
+        maxZoom: 14,
+        duration: 0.9
+      });
+    }
+  }
 
   function handlePick(id, prog) {
     setSelectedId(id);
     setSelectedProg(prog || null);
     setHintFade(true);
-    const loc = LOCATIONS.find(l => l.id === id);
-    if (mapRef.current && loc) {
-      mapRef.current.panTo([loc.lat, loc.lon], { animate: true, duration: 0.35 });
+    if (prog && prog.d) {
+      // Idővonalról / napból érkezett → az egész napot kiemeljük és rázoomolunk
+      setFocusedDay(prog.d);
+      setCityDetail(null);
+      focusDay(prog.d);
+      return;
     }
+    // Térképi pin kattintás
+    setFocusedDay(null);
+    const loc = LOCATIONS.find(l => l.id === id);
+    const map = mapRef.current;
+    if (!map || !loc) return;
+    // Ha a városnak vannak POI-jai → városon belüli sétanézet
+    if (POIS[id]) {
+      setCityDetail(id);
+      const b = L.latLngBounds(POIS[id].map(p => [p.lat, p.lon]));
+      map.flyToBounds(b, {
+        paddingTopLeft: [90, 110],
+        paddingBottomRight: [410, 150],
+        maxZoom: 16,
+        duration: 0.9
+      });
+      return;
+    }
+    // Egyébként a környékre zoomol
+    setCityDetail(null);
+    const cluster = clusterOf(loc);
+    if (cluster.length > 1) {
+      const b = L.latLngBounds(cluster.map(l => [l.lat, l.lon]));
+      map.flyToBounds(b, {
+        paddingTopLeft: [90, 110],
+        paddingBottomRight: [410, 150],
+        maxZoom: 13,
+        duration: 0.9
+      });
+    } else {
+      map.flyTo([loc.lat, loc.lon], 12, { duration: 0.9 });
+    }
+  }
+
+  // Panelben egy programra kattintva: kiemeljük a napot és rázoomolunk
+  function handleProgFromPanel(dayN, i) {
+    setSelectedProg({ d: dayN, i });
+    setFocusedDay(dayN);
+    setCityDetail(null);
+    focusDay(dayN);
+  }
+
+  // Panelben egy POI-ra kattintva: odazoomol
+  function handlePickPoi(poi) {
+    const map = mapRef.current;
+    if (map && poi) map.flyTo([poi.lat, poi.lon], 16, { duration: 0.7 });
+  }
+
+  // Vissza a teljes útvonalra
+  function resetView() {
+    const map = mapRef.current;
+    if (map && map._overviewBounds) {
+      map.flyToBounds(map._overviewBounds, { padding: [80, 80], duration: 0.9 });
+    }
+  }
+  function handleClose() {
+    setSelectedId(null);
+    setSelectedProg(null);
+    setFocusedDay(null);
+    setCityDetail(null);
+    resetView();
   }
 
   // Initialize map once
@@ -1059,22 +1404,32 @@ function App() {
     const map = L.map(mapEl.current, {
       zoomControl: false,
       attributionControl: true,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      touchZoom: true,
       boxZoom: false,
       keyboard: false,
       dragging: true
     });
     mapRef.current = map;
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Bounds calc és zoom zár (tile réteget a másik useEffect adja hozzá)
+    // Áttekintő nézet + zoom-tartomány (a kattintásos ráközelítéshez)
     const bounds = L.latLngBounds(LOCATIONS.map(l => [l.lat, l.lon]));
     map.fitBounds(bounds, { padding: [80, 80] });
-    const lockedZoom = map.getZoom();
-    map.setMinZoom(lockedZoom);
-    map.setMaxZoom(lockedZoom);
-    map.setMaxBounds(bounds.pad(0.35));
+    const overviewZoom = map.getZoom();
+    map._overviewZoom = overviewZoom;
+
+    // Kis zoomnál az al-pinek (pin-minor) rejtése — zsúfoltság ellen
+    const updateZoomClass = () => {
+      map.getContainer().classList.toggle('zoom-far', map.getZoom() <= 9);
+    };
+    map.on('zoomend', updateZoomClass);
+    updateZoomClass();
+    map._overviewBounds = bounds;
+    map.setMinZoom(overviewZoom - 1);
+    map.setMaxZoom(16);
+    map.setMaxBounds(bounds.pad(1.5));
 
     // Útvonal — OSRM (valódi autó-útvonal) + fallback egyenes vonalra
     const waypoints = ROUTE
@@ -1223,12 +1578,12 @@ function App() {
 
     // Állapotgép: plane in → land → car → plane out → pause → ismétlés
     const PHASES = [
-      { name: 'planeIn',  dur: 8000 },
-      { name: 'landing',  dur: 700 },
-      { name: 'car',      dur: 28000 },
-      { name: 'boarding', dur: 700 },
-      { name: 'planeOut', dur: 7500 },
-      { name: 'pause',    dur: 2500 }
+      { name: 'planeIn',  dur: 16000 },
+      { name: 'landing',  dur: 900 },
+      { name: 'car',      dur: 56000 },
+      { name: 'boarding', dur: 900 },
+      { name: 'planeOut', dur: 15000 },
+      { name: 'pause',    dur: 3000 }
     ];
     const TOTAL = PHASES.reduce((s, p) => s + p.dur, 0);
 
@@ -1320,10 +1675,10 @@ function App() {
     // Markers
     LOCATIONS.forEach(loc => {
       const icon = L.divIcon({
-        className: 'pin-wrap',
+        className: 'pin-wrap' + (loc.minor ? ' pin-minor' : ''),
         html: buildIconHtml(loc, false),
-        iconSize: [42, 54],
-        iconAnchor: [21, 54]
+        iconSize: [29, 37],
+        iconAnchor: [14.5, 37]
       });
       const marker = L.marker([loc.lat, loc.lon], { icon, riseOnHover: true }).addTo(map);
       marker.on('click', () => handlePick(loc.id));
@@ -1361,17 +1716,22 @@ function App() {
 
   // Update marker selection state
   useEffect(() => {
+    const dayLocIds = focusedDay
+      ? new Set(dayLocations(focusedDay).map(l => l.id))
+      : null;
     Object.entries(markersRef.current).forEach(([id, marker]) => {
       const loc = LOCATIONS.find(l => l.id === id);
       const isSelected = selectedId === id;
+      const dayActive = dayLocIds ? dayLocIds.has(id) : false;
+      const dim = dayLocIds ? !dayLocIds.has(id) : false;
       const icon = L.divIcon({
-        className: 'pin-wrap',
-        html: buildIconHtml(loc, isSelected),
-        iconSize: [42, 54],
-        iconAnchor: [21, 54]
+        className: 'pin-wrap' + (loc.minor ? ' pin-minor' : ''),
+        html: buildIconHtml(loc, isSelected, { dayActive, dim }),
+        iconSize: [29, 37],
+        iconAnchor: [14.5, 37]
       });
       marker.setIcon(icon);
-      marker.setZIndexOffset(isSelected ? 10000 : 0);
+      marker.setZIndexOffset(isSelected ? 10000 : (dayActive ? 600 : (dim ? -100 : 0)));
       if (isSelected) {
         // setIcon épp újra létrehozta a DOM-ot — a bounce-ot a belső .pin elemen futtatjuk
         requestAnimationFrame(() => {
@@ -1386,7 +1746,68 @@ function App() {
         });
       }
     });
-  }, [selectedId]);
+  }, [selectedId, focusedDay]);
+
+  // Városon belüli POI-k + sétaútvonal megjelenítése
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Korábbi POI rétegek törlése
+    poiLayersRef.current.forEach(l => map.removeLayer(l));
+    poiLayersRef.current = [];
+    const container = map.getContainer();
+    if (!cityDetail || !POIS[cityDetail]) {
+      container.classList.remove('city-detail');
+      return;
+    }
+    container.classList.add('city-detail');
+    const pois = [...POIS[cityDetail]].sort((a, b) => a.order - b.order);
+    const coords = pois.map(p => [p.lat, p.lon]);
+    // Sétaútvonal — világos casing + szaggatott terrakotta (kezdetben egyenes, majd a gyalogos útvonal felülírja)
+    const casing = L.polyline(coords, {
+      color: '#faf1de', weight: 6, opacity: 0.95, lineCap: 'round', lineJoin: 'round'
+    }).addTo(map);
+    const dashed = L.polyline(coords, {
+      color: '#b9532b', weight: 3, opacity: 1, dashArray: '1 9',
+      lineCap: 'round', lineJoin: 'round', className: 'route-dashed-anim'
+    }).addTo(map);
+    poiLayersRef.current.push(casing, dashed);
+
+    // Valódi gyalogos útvonal lekérése (OSRM foot) — az utcák/sikátorok mentén
+    let cancelled = false;
+    const wpString = pois.map(p => `${p.lon},${p.lat}`).join(';');
+    fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${wpString}?overview=full&geometries=geojson`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        if (data && data.routes && data.routes[0]) {
+          const line = data.routes[0].geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+          casing.setLatLngs(line);
+          dashed.setLatLngs(line);
+        }
+      })
+      .catch(err => console.warn('Gyalogos útvonal lekérése sikertelen, egyenes vonal marad:', err));
+
+    // POI markerek
+    pois.forEach((p, idx) => {
+      const icon = L.divIcon({
+        className: 'poi-wrap',
+        html: `<div class="poi"><div class="poi-dot">${idx + 1}</div><div class="poi-label">${p.name}</div></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+      const m = L.marker([p.lat, p.lon], { icon, riseOnHover: true }).addTo(map);
+      m.setZIndexOffset(800);
+      poiLayersRef.current.push(m);
+    });
+    return () => {
+      cancelled = true;
+      poiLayersRef.current.forEach(l => map.removeLayer(l));
+      poiLayersRef.current = [];
+      const c = mapRef.current && mapRef.current.getContainer();
+      if (c) c.classList.remove('city-detail');
+    };
+  }, [cityDetail]);
 
   return (
     <div className="stage">
@@ -1429,10 +1850,23 @@ function App() {
           </div>
         </div>
 
-        {selected && <Panel loc={selected} onClose={() => setSelectedId(null)} />}
+        {selected && (
+          <Panel
+            loc={selected}
+            onClose={handleClose}
+            onPickSibling={handlePick}
+            onPickProg={handleProgFromPanel}
+            onPickPoi={handlePickPoi}
+            selectedProg={selectedProg}
+          />
+        )}
+
+        {selectedId && (
+          <button className="overview-btn" onClick={handleClose}>‹ Teljes útvonal</button>
+        )}
 
         <div className={`hint ${hintFade ? 'fade' : ''}`}>
-          Kattints egy pinre — vagy egy programra alul
+          Kattints egy városra a ráközelítéshez
         </div>
       </div>
 
@@ -1443,5 +1877,6 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
-</body>
-</html>
+
+
+</body></html>
